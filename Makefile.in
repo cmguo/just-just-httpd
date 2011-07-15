@@ -55,18 +55,8 @@ PROJECT_LINK_FLAGS		:= $(PROJECT_LINK_FLAGS)
 PROJECT_DEPENDS			:= \
 				/ppbox/ppbox \
 				/ppbox/common \
-				/base/util \
-				/base/tinyxml \
-				/base/framework \
-				/base/boost/thread \
-				/base/boost/system \
-				/base/boost/filesystem \
-				/base/boost/date_time \
-				/base/boost/regex \
 				$(PROJECT_DEPENDS)
 
 ## 该项目特定的引用库
 
-PROJECT_DEPEND_LIBRARYS		:= $(PROJECT_DEPEND_LIBRARYS) pthread
-
-include $(RELETIVE_DIR)/../BootStrap.mk
+PROJECT_DEPEND_LIBRARYS		:= $(PROJECT_DEPEND_LIBRARYS)
