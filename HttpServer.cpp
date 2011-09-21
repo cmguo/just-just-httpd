@@ -15,6 +15,7 @@ using namespace ppbox::httpd;
 #include <boost/lexical_cast.hpp>
 
 #include <util/protocol/http/HttpSocket.h>
+#include <util/protocol/http/HttpHead.h>
 using namespace util::protocol;
 using namespace boost::system;
 using namespace framework::network;
@@ -40,6 +41,24 @@ namespace ppbox
 {
     namespace httpd
     {
+
+        char const * format_mine[][2] = {
+            {"flv", "video/x-flv"}, 
+            {"ts", "video/MP2T"}, 
+            {"m3u8", "application/x-mpegURL"},
+        };
+
+        char const * content_type(
+            std::string const & format)
+        {
+            for (size_t i = 0; i < sizeof(format_mine) / sizeof(format_mine[0]); ++i) {
+                if (format == format_mine[i][0]) {
+                    return format_mine[i][1];
+                }
+            }
+            return "video";
+        }
+
         MsgInfo * HttpServer::msg_info = new MsgInfo;
 
         HttpServer::HttpServer(boost::asio::io_service & io_svc)
@@ -71,8 +90,15 @@ namespace ppbox
             framework::string::Url request_url(tmphost);
 
             std::string option;
+            std::string format;
             if (request_url.path().size() > 1) {
                 option = request_url.path().substr(1);
+                std::vector<std::string> parm;
+                slice<std::string>(option, std::inserter(parm, parm.end()), ".");
+                if (parm.size() == 2) {
+                    option = parm[0];
+                    format = parm[1];
+                }
             }
 
             if ("start" == option) {
@@ -124,13 +150,24 @@ namespace ppbox
                 msg_info->url    = option;
                 msg_info->write_socket = &get_client_data_stream();
             }
+            if (msg_info->format.empty() && !format.empty()) {
+                msg_info->format = format;
+            }
+            pretreat_msg(ec);
+            response().head().version = 0x101;
+            if (!ec && option == "play") {
+                response().head()["Content-Type"] = std::string("{") + content_type(format) + "}";
+                //response().head()["Transfer-Encoding"] = "{chunked}";
+            } else {
+                response().head()["Content-Type"] = "{text/xml}";
+            }
+            response().head().connection = http_field::Connection::keep_alive;
             resp(ec);
         }
 
         void HttpServer::transfer_response_data(transfer_response_type const & resp)
         {
             error_code ec;
-            pretreat_msg(ec);
             if (ec) {
                 error_code lec;
                 std::pair<std::size_t, std::size_t> size_pair;
