@@ -175,7 +175,7 @@ namespace ppbox
                         blocked_ = false;
                     }
 
-                    lec = Adapter_Read(buffer, 524288, read_size);
+                    lec = Adapter_Read(buffer, 524288, &read_size);
                     if (lec == ppbox_success) {
                         // 限速设计
                         ++sum;
