@@ -36,12 +36,12 @@ namespace ppbox
                 util::protocol::HttpRequestHead & request_head);
 
             virtual void transfer_response_data(
-                transfer_response_type const & resp);
+                response_type const & resp);
 
             virtual void on_error(
                 boost::system::error_code const & ec);
 
-            void local_process(local_process_response_type const & resp);
+            void local_process(response_type const & resp);
 
         private:
             bool is_right_format(std::string const & format);

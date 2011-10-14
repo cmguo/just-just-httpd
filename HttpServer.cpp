@@ -56,7 +56,7 @@ namespace ppbox
             return false;
         }
 
-        void HttpServer::local_process(local_process_response_type const & resp)
+        void HttpServer::local_process(response_type const & resp)
         {
             error_code ec;
             std::string tmphost = "http://host";
@@ -124,10 +124,10 @@ namespace ppbox
                 msg_info->url    = option;
                 msg_info->write_socket = &get_client_data_stream();
             }
-            resp(ec);
+            resp(ec, Size());
         }
 
-        void HttpServer::transfer_response_data(transfer_response_type const & resp)
+        void HttpServer::transfer_response_data(response_type const & resp)
         {
             error_code ec;
             pretreat_msg(ec);
