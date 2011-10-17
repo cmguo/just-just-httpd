@@ -3,8 +3,8 @@
 #ifndef      _PPBOX_HTTP_PLAYMANAGER_
 #define      _PPBOX_HTTP_PLAYMANAGER_
 
-#include <ppbox/ppbox/IAdapter.h>
-#include <ppbox/ppbox/IDemuxer.h>
+#include <ppbox/mux/MuxerModule.h>
+#include <ppbox/common/CommonModuleBase.h>
 
 #include <framework/thread/MessageQueue.h>
 #include <boost/function/function2.hpp>
@@ -43,6 +43,7 @@ namespace ppbox
             SEEK,
             PAUSE,
             RESUME,
+            TSSEG,
             ERR,
         } Option;
 
@@ -100,6 +101,7 @@ namespace ppbox
         {
             OpenInfo()
                : open_state(OpenState::closed)
+               , is_stream_end(false)
             {};
 
             ~OpenInfo() {};
@@ -110,6 +112,7 @@ namespace ppbox
                 format        =  info.format;
                 type          =  info.type;
                 open_state    =  info.open_state;
+                is_stream_end =  info.is_stream_end;
                 plays         = info.plays;
                 mediainfo     = info.mediainfo;
                 return *this;
@@ -119,22 +122,30 @@ namespace ppbox
             std::string         format;
             std::string         type;
             OpenState::Enum     open_state;
+            bool                is_stream_end;
             std::list<MsgInfo> plays;
             std::list<MsgInfo> mediainfo;
         };
 
         class PlayManager
+            : public ppbox::common::CommonModuleBase<PlayManager>
         {
+        public:
+            virtual boost::system::error_code startup();
+
+            virtual void shutdown();
 
         public:
             enum WorkState
             {
+                undefine,
                 command, 
                 play, 
             };
 
         public:
-            PlayManager(boost::asio::io_service & io_srv);
+            PlayManager(util::daemon::Daemon & daemon);
+
             ~PlayManager();
 
             void start(void);
@@ -146,9 +157,11 @@ namespace ppbox
             boost::system::error_code open_impl(
                 boost::system::error_code & ec);
 
-            void async_open_impl(Adapter_Open_Callback callback);
+            void async_open_impl(void);
 
-            static void open_callback(PP_int32 lec);
+            void open_callback(
+                boost::system::error_code const & ec,
+                ppbox::mux::MuxerBase * muxer);
 
             bool is_open(void);
 
@@ -161,6 +174,9 @@ namespace ppbox
                 boost::system::error_code & ec);
 
             boost::system::error_code seek_impl(
+                boost::system::error_code & ec);
+
+            boost::system::error_code tsseg_impl(
                 boost::system::error_code & ec);
 
             boost::system::error_code pause_impl(
@@ -196,7 +212,7 @@ namespace ppbox
             void on_timer(
                 boost::system::error_code const & ec);
 
-            void dump_stat(Adapter_PlayStatistic &msg);
+            //void dump_stat(Adapter_PlayStatistic &msg);
 
             bool is_live_url(std::string const & type);
 
@@ -204,18 +220,16 @@ namespace ppbox
 
             bool is_same_movie(OpenInfo const & open_info);
 
-            static boost::system::error_code ec_translate(PP_int32 lec);
-
         public:
             static boost::system::error_code write_mediainfo_to_client(
                 util::protocol::HttpSocket * handle,
-                Adapter_Mediainfo const & media_info,
+                ppbox::mux::MediaFileInfo const & media_info,
                 boost::system::error_code & ec);
 
             static boost::system::error_code write_playing_info_to_client(
                 util::protocol::HttpSocket * handle,
-                Adapter_PlayStatistic const & msg,
-                PP_uint64 time,
+                boost::uint32_t buffer_time,
+                boost::uint64_t time,
                 boost::system::error_code & ec);
 
             static boost::system::error_code write_error_info_to_client(
@@ -236,13 +250,26 @@ namespace ppbox
                 boost::system::error_code & ec);
 
         private:
+            boost::system::error_code write_data_to_client(
+                ppbox::mux::MuxTagEx & tag,
+                boost::system::error_code & ec);
+
+            void clear();
+
+        private:
+            ppbox::mux::MuxerModule & muxer_mod_;
+            ppbox::mux::MuxerBase * muxer_;
+            ppbox::mux::MuxTagEx mux_tag_;
+            bool segment_end_;
+            size_t close_token_;
             boost::thread * work_thread_;
-            bool is_certify_;
             bool stop_;
             bool pause_;
             bool blocked_;
             boost::uint32_t seek_time_;
-            boost::uint32_t buffer_percent_;
+            //boost::uint32_t buffer_percent_;
+            boost::uint32_t buffer_time_;
+            boost::uint32_t ts_seg_next_index_; // m3u8 format
             boost::asio::io_service & io_srv_;
             MsgInfo msg_info_;
             std::pair<std::size_t, std::size_t> size_pair;

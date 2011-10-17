@@ -1,10 +1,10 @@
 ## 该项目默认的配置类型
 
-LOCAL_CONFIG			:= $(LOCAL_CONFIG) debug multi --enable-build_version --publish=private:public
+LOCAL_CONFIG			:= $(LOCAL_CONFIG) static debug multi --enable-build_version --publish=private:public
 
 ## 项目类型
 
-PROJECT_TYPE			:= bin
+PROJECT_TYPE			:= lib
 
 ## 生成目标名称（完整文件名称要根据类型PROJECT_TYPE、配置LOCAL_CONFIG、版本PROJECT_VERSION增加前缀、后缀）
 
@@ -53,7 +53,6 @@ PROJECT_LINK_FLAGS		:= $(PROJECT_LINK_FLAGS)
 ## 该项目依赖的其他项目
 
 PROJECT_DEPENDS			:= \
-				/ppbox/ppbox \
 				/ppbox/common \
 				/base/tinyxml \
 				$(PROJECT_DEPENDS)

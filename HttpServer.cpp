@@ -10,11 +10,11 @@ using namespace ppbox::httpd;
 
 #include <ppbox/ppbox/IAdapter.h>
 #include <ppbox/ppbox/IDemuxer.h>
-
 #include <framework/string/Url.h>
 #include <boost/lexical_cast.hpp>
 
 #include <util/protocol/http/HttpSocket.h>
+#include <util/protocol/http/HttpHead.h>
 using namespace util::protocol;
 using namespace boost::system;
 using namespace framework::network;
@@ -40,7 +40,26 @@ namespace ppbox
 {
     namespace httpd
     {
+
+        char const * format_mine[][2] = {
+            {"flv", "video/x-flv"}, 
+            {"ts", "video/MP2T"}, 
+            {"m3u8", "application/x-mpegURL"},
+        };
+
+        char const * content_type(
+            std::string const & format)
+        {
+            for (size_t i = 0; i < sizeof(format_mine) / sizeof(format_mine[0]); ++i) {
+                if (format == format_mine[i][0]) {
+                    return format_mine[i][1];
+                }
+            }
+            return "video";
+        }
+
         MsgInfo * HttpServer::msg_info = new MsgInfo;
+        std::string HttpServer::last_select_format_;
 
         HttpServer::HttpServer(boost::asio::io_service & io_svc)
                              : HttpProxy(io_svc)
@@ -71,22 +90,31 @@ namespace ppbox
             framework::string::Url request_url(tmphost);
 
             std::string option;
+            std::string format;
             if (request_url.path().size() > 1) {
                 option = request_url.path().substr(1);
+                std::vector<std::string> parm;
+                slice<std::string>(option, std::inserter(parm, parm.end()), ".");
+                if (parm.size() == 2) {
+                    option = parm[0];
+                    format = parm[1];
+                }
             }
 
-            if ("start" == option) {
+            /* if ("start" == option) {
                 msg_info->option = START;
                 msg_info->gid = request_url.param("gid");
                 msg_info->pid  = request_url.param("pid");
                 msg_info->auth = request_url.param("auth");
                 msg_info->write_socket = &get_client_data_stream();
-            } else if ("play" == option) {
+            } else */
+            if ("play" == option) {
                 msg_info->option = PLAY;
                 msg_info->url = request_url.param("playlink");
                 msg_info->format = request_url.param("format");
                 msg_info->type   = request_url.param("type");
                 msg_info->seek_time = 0;
+                last_select_format_ = msg_info->format;
                 if (!request_url.param("seek").empty()) {
                     msg_info->seek_time = atoi(request_url.param("seek").c_str());
                 }
@@ -123,14 +151,34 @@ namespace ppbox
                 msg_info->option = NODEFINE;
                 msg_info->url    = option;
                 msg_info->write_socket = &get_client_data_stream();
+                if ("m3u8" == last_select_format_) {
+                    std::vector<std::string> parm;
+                    slice<std::string>(option, std::inserter(parm, parm.end()), ".");
+                    if (parm.size() == 2 && parm[1] == "ts" && atoi(parm[0].c_str()) > 0) {
+                        msg_info->option = TSSEG;
+                        msg_info->url = parm[0];
+                    }
+                }
             }
+            if (msg_info->format.empty() && !format.empty()) {
+                msg_info->format = format;
+            }
+            pretreat_msg(ec);
+            response().head().version = 0x101;
+            if (!ec && option == "play") {
+                response().head()["Content-Type"] = std::string("{") + content_type(format) + "}";
+                //response().head()["Transfer-Encoding"] = "{chunked}";
+            } else {
+                response().head()["Content-Type"] = "{text/xml}";
+            }
+            //response().head().connection = http_field::Connection::keep_alive;
+            resp(ec);
             resp(ec, Size());
         }
 
         void HttpServer::transfer_response_data(response_type const & resp)
         {
             error_code ec;
-            pretreat_msg(ec);
             if (ec) {
                 error_code lec;
                 std::pair<std::size_t, std::size_t> size_pair;
@@ -159,7 +207,9 @@ namespace ppbox
         bool HttpServer::is_right_format(std::string const & format)
         {
             bool res = false;
-            if (strncasecmp(format, "flv") || strncasecmp(format, "ts")) {
+            if (strcmp(format.c_str(), "flv")
+                || strcmp(format.c_str(), "ts")
+                || strcmp(format.c_str(), "m3u8")) {
                 res = true;
             }
             return res;
@@ -200,11 +250,13 @@ namespace ppbox
             return ec;
         }
 
-        HttpMediaServer::HttpMediaServer(boost::asio::io_service & io_srv
-                                       , NetName const & addr)
-                                       :io_srv_(io_srv)
-                                       , addr_(addr)
-                                       , mgr_(new HttpProxyManager<HttpServer>(io_srv_, addr_))
+        HttpMediaServer::HttpMediaServer(
+            util::daemon::Daemon & daemon)
+            : ppbox::common::CommonModuleBase<HttpMediaServer>(daemon, "httpmediaserver")
+            , io_srv_(daemon.io_svc())
+            , play_mod_(util::daemon::use_module<PlayManager>(daemon))
+            , addr_(NetName("0.0.0.0:9006"))
+            , mgr_(new HttpProxyManager<HttpServer>(io_srv_, addr_))
         {
         }
 
@@ -214,6 +266,16 @@ namespace ppbox
                 delete mgr_;
                 mgr_ = NULL;
             }
+        }
+
+        error_code HttpMediaServer::startup()
+        {
+            return start();
+        }
+
+        void HttpMediaServer::shutdown()
+        {
+            stop();
         }
 
         error_code HttpMediaServer::start()
@@ -226,6 +288,7 @@ namespace ppbox
         error_code HttpMediaServer::stop()
         {
             error_code ec;
+            mgr_->stop();
             return ec;
         }
 
@@ -233,45 +296,44 @@ namespace ppbox
 
 } // namespace ppbox
 
-int main(int argc, char *argv[])
-{
-    framework::configure::Config conf("ppbox_httpd.conf");
-    global_logger().load_config(conf);
-
-    ppbox::common::log_versions();
-
-    PP_uint32 nBufferTime = 0;
-    PP_uint32 nBufferSize = 0;
-    PP_uint32 nDownloadSpeed = 0;
-
-    if (nBufferTime > 0) {
-        PPBOX_SetPlayBufferTime(nBufferTime * 1000);
-    } else {
-        PPBOX_SetPlayBufferTime(4 * 1000);
-    }
-
-    if (nBufferSize > 0) {
-        PPBOX_SetDownloadBufferSize(nBufferSize * 1024 * 1024);
-    } else {
-        PPBOX_SetDownloadBufferSize(4 * 1024 * 1024);
-    }
-
-    if (nDownloadSpeed > 0) {
-        PPBOX_SetDownloadMaxSpeed(nDownloadSpeed);
-    } else {
-        PPBOX_SetDownloadMaxSpeed(100);
-    }
-
-    boost::asio::io_service io_serv;
-    PlayManager play_manager(io_serv);
-    play_manager.start();
-
-    NetName addr("0.0.0.0:9006");
-    ppbox::httpd::HttpMediaServer server(io_serv, addr);
-    server.start();
-    io_serv.run();
-
-    PPBOX_StopP2PEngine();
-}
-
+//int main(int argc, char *argv[])
+//{
+//    framework::configure::Config conf("ppbox_httpd.conf");
+//    global_logger().load_config(conf);
+//
+//    ppbox::common::log_versions();
+//
+//    PP_uint32 nBufferTime = 0;
+//    PP_uint32 nBufferSize = 0;
+//    PP_uint32 nDownloadSpeed = 0;
+//
+//    if (nBufferTime > 0) {
+//        PPBOX_SetPlayBufferTime(nBufferTime * 1000);
+//    } else {
+//        PPBOX_SetPlayBufferTime(4 * 1000);
+//    }
+//
+//    if (nBufferSize > 0) {
+//        PPBOX_SetDownloadBufferSize(nBufferSize * 1024 * 1024);
+//    } else {
+//        PPBOX_SetDownloadBufferSize(4 * 1024 * 1024);
+//    }
+//
+//    if (nDownloadSpeed > 0) {
+//        PPBOX_SetDownloadMaxSpeed(nDownloadSpeed);
+//    } else {
+//        PPBOX_SetDownloadMaxSpeed(100);
+//    }
+//
+//    boost::asio::io_service io_serv;
+//    PlayManager play_manager(io_serv);
+//    play_manager.start();
+//
+//    NetName addr("0.0.0.0:9006");
+//    ppbox::httpd::HttpMediaServer server(io_serv, addr);
+//    server.start();
+//    io_serv.run();
+//
+//    PPBOX_StopP2PEngine();
+//}
 

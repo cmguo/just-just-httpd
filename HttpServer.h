@@ -3,6 +3,8 @@
 #ifndef      _PPBOX_HTTP_SERVER_
 #define      _PPBOX_HTTP_SERVER_
 
+#include <ppbox/common/CommonModuleBase.h>
+
 #include <util/protocol/http/HttpProxyManager.h>
 #include <util/protocol/http/HttpProxy.h>
 #include <util/protocol/http/HttpRequest.h>
@@ -17,6 +19,7 @@ namespace ppbox
     namespace httpd
     {
         struct MsgInfo;
+        class PlayManager;
 
         typedef enum {
             closed,
@@ -53,15 +56,21 @@ namespace ppbox
         // static
         private:
             static MsgInfo * msg_info;
-
+            static std::string last_select_format_;
         };
 
         class HttpMediaServer
+            : public ppbox::common::CommonModuleBase<HttpMediaServer>
         {
         public:
+            virtual boost::system::error_code startup();
+
+            virtual void shutdown();
+
+        public:
             HttpMediaServer(
-                boost::asio::io_service & io_srv
-                ,framework::network::NetName const & addr);
+                util::daemon::Daemon & daemon);
+
             ~HttpMediaServer();
 
             boost::system::error_code start();
@@ -69,9 +78,9 @@ namespace ppbox
 
         private:
             boost::asio::io_service & io_srv_;
+            PlayManager & play_mod_;
             framework::network::NetName addr_;
             util::protocol::HttpProxyManager<HttpServer> *mgr_;
-
         };
 
     } // namespace httpd
