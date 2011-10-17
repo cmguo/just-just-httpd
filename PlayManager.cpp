@@ -48,26 +48,48 @@ namespace ppbox
             : ppbox::common::CommonModuleBase<PlayManager>(daemon, "playmanager")
             , muxer_mod_(util::daemon::use_module<ppbox::mux::MuxerModule>(daemon))
             , muxer_(NULL)
-            , close_token_(0)
             , work_thread_(NULL)
-            , segment_end_(false)
-            , stop_(false)
-            , pause_(false)
-            , blocked_(false)
-            , seek_time_(0)
-            //, buffer_percent_(0)
-            , buffer_time_(3000) // 3s
-            , ts_seg_next_index_(0)
             , io_srv_(daemon.io_svc())
-            , work_state_(PlayManager::command)
-            , last_error_(error::httpd_not_authed)
+           
         {
+            clear();
             size_pair.first = 0;
             size_pair.second = 0;
         }
 
         PlayManager::~PlayManager()
         {
+        }
+
+        void PlayManager::clear()
+        {
+           
+            if(muxer_)
+            {
+                delete muxer_;
+                muxer_ = NULL;
+            }
+            
+            while(!s_msg_queue.empty())
+            {
+                s_msg_queue.pop(msg_info_);
+            }
+            while(!open_task_queue_.empty())
+            {
+                open_task_queue_.pop();
+            }
+            
+            work_state_=PlayManager::command;
+            last_error_=error::httpd_not_authed;
+            //s_msg_queue.clean();
+            segment_end_ = false;
+            stop_=false;
+            pause_=false;
+            blocked_=false;
+            seek_time_=0;
+            buffer_time_=3000; // 3s
+            ts_seg_next_index_=0;
+            close_token_ = 0;
         }
 
         error_code PlayManager::startup()
@@ -84,20 +106,40 @@ namespace ppbox
 
         void PlayManager::start(void)
         {
-            if (!work_thread_) {
+            LOG_S(Logger::kLevelEvent,  "PlayManager::start beg" );
+            //if (!work_thread_) {
                 work_thread_ = new boost::thread(
                     boost::bind(&PlayManager::thread_function, this));
-            }
-            work_thread_->detach();
+            //}
+            //work_thread_->detach();
+            LOG_S(Logger::kLevelEvent,  "PlayManager::start end" );
         }
 
         void PlayManager::stop(void)
         {
+            LOG_S(Logger::kLevelEvent,  "PlayManager::stop" );
+            if(NULL == work_thread_)
+            {
+                //std::cout << "Play second enter" << std::endl;
+                return;
+            }
+            blocked_ = false;
             stop_ = true;
+            work_state_ = PlayManager::undefine;
+            MsgInfo msg;
+            msg.option = NODEFINE;
+            s_msg_queue.push(msg);
+            work_thread_->join();
+            delete work_thread_;
+            work_thread_ = NULL;
+            clear();
+
+            //work_thread_ = NULL;
         }
 
         void PlayManager::thread_function(void)
         {
+            //std::cout<<"PlayManager::thread_function"<<std::endl;
             boost::uint32_t sum = 0;
             boost::uint32_t buffer_time = 0;
             error_code ec;
@@ -183,21 +225,11 @@ namespace ppbox
                         blocked_ = false;
                     }
 
-<<<<<<< .working
-                    lec = Adapter_Read(buffer, 524288, &read_size);
-                    if (lec == ppbox_success) {
-                        // 限速设计
-                        ++sum;
-                        if (sum >= 300) {
-                            sum = 0;
-                            boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-=======
                     if (ts_seg_next_index_ == 0 && open_task_queue_.front().format == "m3u8") {
-                        //ts_seg_next_index_ = 1;
-                        M3U8Protocol msu8(10, muxer_->media_info().duration);
+                        M3U8Protocol m3u8(10, muxer_->media_info().duration);
                         boost::asio::write(
                             *open_task_queue_.front().plays.front().write_socket, 
-                            boost::asio::buffer(msu8.read_buffer()), 
+                            boost::asio::buffer(m3u8.read_buffer()), 
                             boost::asio::transfer_all(), 
                             playing_ec);
                         open_task_queue_.front().plays.front().resp(playing_ec, size_pair);
@@ -214,6 +246,7 @@ namespace ppbox
                                 }
                                 if (ts_seg_next_index_ > 0
                                     && open_task_queue_.front().format == "m3u8"
+                                    && M3U8Protocol::last_segment_index != (ts_seg_next_index_-1)
                                     && mux_tag_.is_sync
                                     && mux_tag_.itrack == muxer_->video_track_index()
                                     && mux_tag_.time/1000 >= 10*(ts_seg_next_index_-1) ) {
@@ -223,6 +256,11 @@ namespace ppbox
                                         segment_end_ = true;
                                 } else {
                                     write_data_to_client(mux_tag_, playing_ec);
+#ifdef   _WRITE_MUX_FILE_
+                                    out_mux_file.write((char*)mux_tag_.tag_header_buffer, mux_tag_.tag_header_length);
+                                    out_mux_file.write((char*)mux_tag_.tag_data_buffer, mux_tag_.tag_data_length);
+                                    out_mux_file.write((char*)mux_tag_.tag_size_buffer, mux_tag_.tag_size_length);
+#endif
                                     if (playing_ec) {
                                         LOG_S(Logger::kLevelEvent, "write socket error: ec = " << playing_ec.message());
                                         playing_ec = error::httpd_client_closed;
@@ -247,30 +285,25 @@ namespace ppbox
                                     open_task_queue_.front().plays.front().resp.clear();
                                     LOG_S(Logger::kLevelEvent, "stream end value: " << ec.value()
                                         << ", message: " << ec.message());
+#ifdef   _WRITE_MUX_FILE_
+                                    out_mux_file.close();
+#endif
                                 } else {
                                     open_task_queue_.front().plays.front().resp(playing_ec, size_pair);
                                     open_task_queue_.front().plays.front().resp.clear();
                                     work_state_ = PlayManager::command;
+#ifdef   _WRITE_MUX_FILE_
+                                    out_mux_file.close();
+#endif
                                 }
                             }
                         } else {
                             segment_end_ = false;
-                            if (open_task_queue_.front().plays.front().format == "m3u8") {
-                                boost::uint32_t head_size = 0;
-                                unsigned char const * head_buffer = muxer_->get_head(head_size);
-                                boost::asio::write(
-                                    *open_task_queue_.front().plays.front().write_socket, 
-                                    boost::asio::buffer(head_buffer, head_size), 
-                                    boost::asio::transfer_all(), 
-                                    playing_ec);
-                            }
-                            if (!playing_ec) {
-                                write_data_to_client(mux_tag_, playing_ec);
-                                if (playing_ec) {
-                                    LOG_S(Logger::kLevelEvent, "write socket error: ec = " << playing_ec.message());
-                                    playing_ec = error::httpd_client_closed;
-                                    work_state_ = PlayManager::command;
-                                }
+                            write_data_to_client(mux_tag_, playing_ec);
+                            if (playing_ec) {
+                                LOG_S(Logger::kLevelEvent, "write socket error: ec = " << playing_ec.message());
+                                playing_ec = error::httpd_client_closed;
+                                work_state_ = PlayManager::command;
                             }
                         }
                     }
@@ -293,6 +326,7 @@ namespace ppbox
                     }
                 } // End while (work_state_ == PlayManager::play)
             } // End while
+            LOG_S(Logger::kLevelEvent,  "End of Thread" );
         }
 
         error_code PlayManager::write_data_to_client(
@@ -472,6 +506,7 @@ namespace ppbox
             error_code const & ec,
             MuxerBase * muxer)
         {
+            //std::cout<<"New muxer:"<<muxer<<std::endl;
             LOG_SECTION();
             MsgInfo msg_info;
             msg_info.ec = ec;
@@ -604,6 +639,7 @@ namespace ppbox
         error_code PlayManager::tsseg_impl(
             error_code & ec)
         {
+            ec.clear();
             boost::uint32_t cur_index = boost::uint32_t(-1);
             if (!is_play()) {
                 ec = error::httpd_not_open;
@@ -611,12 +647,24 @@ namespace ppbox
                 cur_index = atoi(msg_info_.url.c_str());
                 open_task_queue_.front().plays.front().write_socket = msg_info_.write_socket;
                 open_task_queue_.front().plays.front().resp = msg_info_.resp;
+                // Seek, write ts head
+                boost::uint32_t head_size = 0;
+                unsigned char const * head_buffer = muxer_->get_head(head_size);
+                boost::asio::write(
+                    *open_task_queue_.front().plays.front().write_socket, 
+                    boost::asio::buffer(head_buffer, head_size), 
+                    boost::asio::transfer_all(), 
+                    ec);
+                if (ec) {
+                    return ec;
+                }
                 if (ts_seg_next_index_ != cur_index) {
                     muxer_->seek((cur_index-1)*10*1000, ec);
                     if (!ec || ec == boost::asio::error::would_block) {
                         open_task_queue_.front().is_stream_end = false;
                         ts_seg_next_index_ = cur_index+1;
                         work_state_ = PlayManager::play;
+                        segment_end_ = false;
                     } else {
                         open_task_queue_.front().plays.front().resp(ec, size_pair);
                         open_task_queue_.front().plays.front().resp.clear();
@@ -625,9 +673,6 @@ namespace ppbox
                     ts_seg_next_index_++;
                     if (open_task_queue_.front().is_stream_end) {
                         ec = boost::asio::error::eof;
-                        //error_code lec;
-                        //write_error_respone(msg_info_.write_socket,
-                        //    ec.value(), ec.message(), "tsseg_impl", lec);
                         open_task_queue_.front().plays.front().resp(ec, size_pair);
                         open_task_queue_.front().plays.front().resp.clear();
                     } else {
@@ -728,11 +773,6 @@ namespace ppbox
                         boost::bind(&PlayManager::open_callback, this, _1, _2));
                 }
             } else {
-#ifdef   _WRITE_MUX_FILE_
-                std::string filename = std::string("muxout.")
-                    + open_task_queue_.front().format;
-                out_mux_file.open(filename.c_str(), std::ios::binary);
-#endif
                 last_error_.clear();
                 open_task_queue_.front().open_state = OpenState::opened;
                 ts_seg_next_index_ = 0;
@@ -839,6 +879,8 @@ namespace ppbox
 
         error_code PlayManager::handle_seek(error_code & ec)
         {
+            if(NULL == muxer_)
+                std::cout<<"NULL Point muxer:"<<muxer_<<std::endl;
             if (!is_live_url(open_task_queue_.front().type) 
                 && open_task_queue_.front().format != "m3u8") {
                 muxer_->seek(open_task_queue_.front().plays.front().seek_time * 1000, ec);
