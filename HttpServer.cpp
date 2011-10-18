@@ -172,7 +172,6 @@ namespace ppbox
                 response().head()["Content-Type"] = "{text/xml}";
             }
             //response().head().connection = http_field::Connection::keep_alive;
-            resp(ec);
             resp(ec, Size());
         }
 
@@ -219,6 +218,7 @@ namespace ppbox
         {
             bool res = false;
             if (strncasecmp(type, "ppvod") || strncasecmp(type, "pplive")
+                || strncasecmp(type, "pplive2")
                 || strncasecmp(type, "ppfile-asf") || strncasecmp(type, "ppfile-mp4")
                 || strncasecmp(type, "ppfile-flv")) {
                 res = true;
