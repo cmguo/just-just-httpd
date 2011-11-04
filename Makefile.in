@@ -1,6 +1,6 @@
 ## 该项目默认的配置类型
 
-LOCAL_CONFIG			:= $(LOCAL_CONFIG) static debug multi --enable-build_version --publish=private:public
+LOCAL_CONFIG			:= $(LOCAL_CONFIG) debug multi
 
 ## 项目类型
 
@@ -53,6 +53,7 @@ PROJECT_LINK_FLAGS		:= $(PROJECT_LINK_FLAGS)
 ## 该项目依赖的其他项目
 
 PROJECT_DEPENDS			:= \
+				/ppbox/mux \
 				/ppbox/common \
 				/base/tinyxml \
 				$(PROJECT_DEPENDS)
