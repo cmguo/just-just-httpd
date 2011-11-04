@@ -1,0 +1,140 @@
+// RtspSession.cpp
+
+#include "ppbox/httpd/Common.h"
+#include "ppbox/httpd/HttpDispatcher.h"
+#include "ppbox/httpd/HttpSink.h"
+
+#include <ppbox/mux/Muxer.h>
+
+#include <tinyxml/tinyxml.h>
+#include <boost/bind.hpp>
+#include <boost/thread/thread.hpp>
+#include <framework/system/LogicError.h>
+using namespace framework::system::logic_error;
+using namespace framework::logger;
+using namespace boost::system;
+using namespace util::protocol;
+
+FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpDispatcher", 0)
+
+namespace ppbox
+{
+    namespace httpd
+    {
+
+        HttpDispatcher::HttpDispatcher(
+            util::daemon::Daemon & daemon)
+            : ppbox::mux::Dispatcher(daemon)
+        {
+
+        }
+
+        HttpDispatcher::~HttpDispatcher()
+        {
+
+        }
+
+        boost::system::error_code HttpDispatcher::open_mediainfo(
+            boost::uint32_t& session_id,
+            std::string const & play_link,
+            std::string const & format,
+            std::string & body,
+            ppbox::mux::session_callback_respone const & resp)
+        {
+            return Dispatcher::open(session_id,play_link,format,false,
+                boost::bind(&HttpDispatcher::mediainfo_callback,this,boost::ref(body),resp,_1));
+        }
+
+        boost::system::error_code HttpDispatcher::open_for_play(
+            boost::uint32_t& session_id,
+            std::string const & play_link,
+            std::string const & format,
+            ppbox::mux::session_callback_respone const & resp)
+        {
+            return Dispatcher::open(session_id,play_link,format,true,resp);
+        }
+
+        boost::system::error_code HttpDispatcher::setup(
+            boost::uint32_t session_id, 
+            util::protocol::HttpSocket& sock,
+            ppbox::mux::session_callback_respone const & resp)
+        {
+            HttpSink* sink = new HttpSink(sock);
+            return Dispatcher::setup(session_id,sink,resp);
+        }
+
+        void HttpDispatcher::mediainfo_callback(
+            std::string& rtp_info,
+            ppbox::mux::session_callback_respone const &resp,
+            boost::system::error_code ec)
+        {
+            if(!ec)
+            {
+                const ppbox::mux::MediaFileInfo & media_info = cur_mov_->muxer->mediainfo();
+
+                TiXmlDocument doc;
+                const char* strXMLContent =
+                    "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                    "<template module=\"mediainfo\" version=\"1.0\">"
+                    "<success>0</success>"
+                    "</template>";
+
+                doc.Parse( strXMLContent );
+                if ( !doc.Error() )
+                {
+                    TiXmlNode* node = 0;
+                    TiXmlElement* element = 0;
+                    node = doc.FirstChild( "template" );
+                    element = node->ToElement();
+
+                    TiXmlElement duration("duration");
+                    duration.SetAttribute("value", format(media_info.duration).c_str());
+
+                    TiXmlElement video("video");
+                    video.SetAttribute("codec", "h264");
+                    if (media_info.video_index != boost::uint32_t(-1)) {
+                        ppbox::demux::MediaInfo const & video_stream_info = media_info.stream_infos[media_info.video_index];
+                        TiXmlElement videoproperty("property");
+                        videoproperty.SetAttribute("frame-rate", format(video_stream_info.video_format.frame_rate).c_str());
+                        videoproperty.SetAttribute("width", format(video_stream_info.video_format.width).c_str());
+                        videoproperty.SetAttribute("height", format(video_stream_info.video_format.height).c_str());
+                        video.InsertEndChild(videoproperty);
+                    }
+
+
+                    TiXmlElement audio("audio");
+                    audio.SetAttribute("codec", "aac");
+                    if (media_info.audio_index != boost::uint32_t(-1)) {
+                        ppbox::demux::MediaInfo const & audio_stream_info = media_info.stream_infos[media_info.audio_index];
+                        TiXmlElement audioproperty("property");
+                        audioproperty.SetAttribute("channels", format(audio_stream_info.audio_format.channel_count).c_str());
+                        audioproperty.SetAttribute("sample-rate", format(audio_stream_info.audio_format.sample_rate).c_str());
+                        audioproperty.SetAttribute("sample-size", format(audio_stream_info.audio_format.sample_size).c_str());
+                        audio.InsertEndChild(audioproperty);
+                    }
+
+                    element->InsertEndChild(duration);
+                    element->InsertEndChild(video);
+                    element->InsertEndChild(audio);
+                }
+
+                TiXmlPrinter printer;
+                printer.SetStreamPrinting();
+                doc.Accept( &printer );
+                rtp_info = printer.CStr();
+            }
+            else
+            {
+                rtp_info.clear();// = "";
+            }
+            resp(ec);
+        }
+
+        void HttpDispatcher::set_host(std::string const & host)
+        {
+            assert(NULL != cur_mov_->muxer);
+            cur_mov_->muxer->Config().set("M3U8","full_path", host);
+        }
+
+    } // namespace rtspd
+} // namespace ppbox
