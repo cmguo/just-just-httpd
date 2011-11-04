@@ -28,7 +28,7 @@ namespace ppbox
                 util::protocol::HttpRequestHead & request_head);
 
             virtual void transfer_response_data(
-                transfer_response_type const & resp);
+                response_type const & resp);
 
             virtual void on_error(
                 boost::system::error_code const & ec);
@@ -36,22 +36,25 @@ namespace ppbox
             virtual void on_finish();
             
 
-            virtual void local_process(local_process_response_type const & resp);
+            virtual void local_process(response_type const & resp);
 
         private:
-            void open_callback(local_process_response_type const &resp,
+            void open_callback(response_type const &resp,
                 boost::system::error_code const & ec);
 
-            void on_open(local_process_response_type const &resp,
+            void on_open(response_type const &resp,
                 boost::system::error_code const & ec);
 
-            void open_setupup(local_process_response_type const &resp,
+            void open_setupup(response_type const &resp,
                 boost::system::error_code const & ec);
 
-            void on_playend(transfer_response_type const &resp,
+            void on_playend(response_type const &resp,
                  boost::system::error_code const & ec);
 
-            void on_seekend(transfer_response_type const &resp,
+            void on_seekend(response_type const &resp,
+                boost::system::error_code const & ec);
+
+            void on_common(response_type const &resp,
                 boost::system::error_code const & ec);
 
             //给客户端写数据
@@ -65,7 +68,7 @@ namespace ppbox
             static std::string g_format_;  //保存上一次的format
 
         private:
-            boost::asio::io_service & io_svc;
+            boost::asio::io_service & io_svc_;
             std::string option_;  //transfer_response_data判断上次处理的什么消息
             std::string format_;  //transfer_response_data判断上次处理的什么消息
             std::string body_;    //保存回复的消息体

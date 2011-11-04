@@ -49,7 +49,7 @@ namespace ppbox
         HttpSession::HttpSession(
             boost::asio::io_service & io_svc)
             : HttpProxy(io_svc)
-            ,io_svc(io_svc)
+            ,io_svc_(io_svc)
             ,session_id_(0)
             ,seek_(0)
             ,need_seek_(false)
@@ -65,7 +65,7 @@ namespace ppbox
             return false;
         }
 
-        void HttpSession::local_process(local_process_response_type const & resp)
+        void HttpSession::local_process(response_type const & resp)
         {
             //LOG_S(Logger::kLevelEvent, "[local_process]");
 
@@ -128,7 +128,7 @@ namespace ppbox
             if ("mediainfo" == option)
             {//open
                 dispatch_->open_mediainfo(session_id_,playlink,format,body_,
-                    io_svc.wrap(boost::bind(resp,_1)));
+                    boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("seek" == option)
             {
@@ -138,17 +138,17 @@ namespace ppbox
                     seek *= 1000;
                 }
                 dispatch_->seek(session_id_,seek,0,
-                    io_svc.wrap(boost::bind(resp,_1)));
+                    boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("pause" == option)
             {
                 dispatch_->pause(session_id_,
-                    io_svc.wrap(boost::bind(resp,_1)));
+                    boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("resume" == option)
             {
                 dispatch_->resume(session_id_,
-                    io_svc.wrap(boost::bind(resp,_1)));
+                    boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("info" == option)
             {
@@ -184,12 +184,13 @@ namespace ppbox
                 else
                 {
                     ec_ = httpd_request_error;
-                    resp(ec_); 
+                    make_error_response_body(body_,ec_);
+                    resp(ec_,body_.size()); 
                 }
             }
         }
 
-        void HttpSession::transfer_response_data(transfer_response_type const & resp)
+        void HttpSession::transfer_response_data(response_type const & resp)
         {
             //mediainfo  m3u8  xml
             //play seek  Play  
@@ -198,9 +199,11 @@ namespace ppbox
 
             if (ec_ || option_ != "play" || !body_.empty())
             {
+                size_t tSize = body_.size();
                 ec_ = write(body_);
-                body_.clear();
                 LOG_S(Logger::kLevelEvent, "[transfer_response_data] "<<option_);
+                body_.clear();
+                resp(ec_,tSize);
             }
             else
             {   
@@ -208,18 +211,18 @@ namespace ppbox
                 if (!need_seek_ )
                 { //直接Play
                     dispatch_->play(session_id_,
-                        io_svc.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
+                        io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
                 }
                 else
                 {//Seek
                     dispatch_->seek(session_id_,seek_,0,
-                        io_svc.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
+                        io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
                     seek_ = 0;
                     need_seek_ = false;
                 }
                 return;
             }
-            resp(ec_,std::pair<std::size_t, std::size_t>(0,0));
+           
 
         }
 
@@ -237,7 +240,7 @@ namespace ppbox
         }
 
         //Dispatch 线程
-        void HttpSession::on_open(local_process_response_type const &resp,
+        void HttpSession::on_open(response_type const &resp,
             boost::system::error_code const & ec)
         {
             boost::system::error_code ec1 = ec;
@@ -254,7 +257,7 @@ namespace ppbox
                     }
                 } else {
                     dispatch_->setup(session_id_,get_client_data_stream(),
-                        io_svc.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
+                        io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
                     return;
                 }
             }
@@ -262,12 +265,11 @@ namespace ppbox
             {
                 make_error_response_body(body_,ec);
             }
-            io_svc.post(boost::bind(resp, ec));
-            //io_svc().post(boost::bind(resp, ec,body_.size()));
+            io_svc_.post(boost::bind(resp, ec,body_.size()));
         }
 
         // 主线程 下面
-        void HttpSession::open_setupup(local_process_response_type const &resp,
+        void HttpSession::open_setupup(response_type const &resp,
             boost::system::error_code const & ec)
         {
             LOG_S(Logger::kLevelEvent, "[open_setupup] ");
@@ -275,22 +277,32 @@ namespace ppbox
             if (ec)
             {
                 make_error_response_body(body_,ec);
-                resp(ec);
-                //resp(ec,body_.size());
+                resp(ec,body_.size());
             } else {
-                resp(ec);
-                //resp(ec, Size());
+                resp(ec, Size());
             }
         }
 
-        void HttpSession::on_playend(transfer_response_type const &resp,
+        void HttpSession::on_common(response_type const &resp,
+            boost::system::error_code const & ec)
+        {
+            LOG_S(Logger::kLevelEvent, "[on_common] ");
+            ec_ = ec;
+            if (ec)
+            {
+                make_error_response_body(body_,ec);
+            }
+            io_svc_.post(boost::bind(resp, ec,body_.size()));
+        }
+
+        void HttpSession::on_playend(response_type const &resp,
             boost::system::error_code const & ec)
         {
             LOG_S(Logger::kLevelEvent, "[on_playend] ");
             resp(ec,std::pair<std::size_t, std::size_t>(0,0));
         }
 
-        void HttpSession::on_seekend(transfer_response_type const &resp,
+        void HttpSession::on_seekend(response_type const &resp,
             boost::system::error_code const & ec)
         {
             LOG_S(Logger::kLevelEvent, "[on_seekend] ");
@@ -301,7 +313,7 @@ namespace ppbox
             else
             {//play
                 dispatch_->play(session_id_,
-                    io_svc.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
+                    io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
             }
         }
 
