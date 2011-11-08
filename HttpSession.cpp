@@ -7,6 +7,8 @@
 
 #include "ppbox/httpd/HttpSink.h"
 #include "ppbox/httpd/HttpDispatcher.h"
+#include "ppbox/httpd/HttpManager.h"
+
 
 #include <ppbox/mux/MuxerBase.h>
 
@@ -42,18 +44,18 @@ namespace ppbox
     namespace httpd
     {
 
-        extern HttpDispatcher* dispatch_;
 
         std::string HttpSession::g_format_;
 
         HttpSession::HttpSession(
-            boost::asio::io_service & io_svc)
-            : HttpProxy(io_svc)
-            ,io_svc_(io_svc)
+            HttpManager & mgr)
+            : HttpProxy(mgr.io_svc())
+            ,io_svc_(mgr.io_svc())
             ,session_id_(0)
             ,seek_(0)
             ,need_seek_(false)
         {
+            dispatcher_ = mgr.dispatcher();
         }
 
         HttpSession::~HttpSession()
@@ -127,7 +129,7 @@ namespace ppbox
 
             if ("mediainfo" == option)
             {//open
-                dispatch_->open_mediainfo(session_id_,playlink,format,body_,
+                dispatcher_->open_mediainfo(session_id_,playlink,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("seek" == option)
@@ -137,17 +139,17 @@ namespace ppbox
                     seek = atoi(request_url.param("time").c_str());
                     seek *= 1000;
                 }
-                dispatch_->seek(session_id_,seek,0,
+                dispatcher_->seek(session_id_,seek,0,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("pause" == option)
             {
-                dispatch_->pause(session_id_,
+                dispatcher_->pause(session_id_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("resume" == option)
             {
-                dispatch_->resume(session_id_,
+                dispatcher_->resume(session_id_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("info" == option)
@@ -164,7 +166,7 @@ namespace ppbox
                     need_seek_ = true;
                 }
                 g_format_ = format;
-                dispatch_->open_for_play(session_id_,playlink,format,
+                dispatcher_->open_for_play(session_id_,playlink,format,
                     boost::bind(&HttpSession::on_open,this,resp,_1));
             }
             else  
@@ -177,7 +179,7 @@ namespace ppbox
                     seek_ = atoi(option.c_str());
                     need_seek_ = true;
 
-                    dispatch_->open_for_play(session_id_,"", "",
+                    dispatcher_->open_for_play(session_id_,"", "",
                         boost::bind(&HttpSession::on_open,this,resp,_1));
 
                 }
@@ -210,12 +212,12 @@ namespace ppbox
                 //open most
                 if (!need_seek_ )
                 { //直接Play
-                    dispatch_->play(session_id_,
+                    dispatcher_->play(session_id_,
                         io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
                 }
                 else
                 {//Seek
-                    dispatch_->seek(session_id_,seek_,0,
+                    dispatcher_->seek(session_id_,seek_,0,
                         io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
                     seek_ = 0;
                     need_seek_ = false;
@@ -229,14 +231,14 @@ namespace ppbox
         void HttpSession::on_finish()
         {
             LOG_S(Logger::kLevelEvent, "[on_finish] id"<<session_id_);
-            dispatch_->close(session_id_);
+            dispatcher_->close(session_id_);
         }
         void HttpSession::on_error(
             boost::system::error_code const & ec)
         {
             LOG_S(Logger::kLevelEvent, "[on_error] id"<<session_id_);
             LOG_S(Logger::kLevelDebug, "[on_error] ec: " << ec.message());
-            dispatch_->close(session_id_);
+            dispatcher_->close(session_id_);
         }
 
         //Dispatch 线程
@@ -248,15 +250,15 @@ namespace ppbox
             {
                 if (format_ == "m3u8") 
                 {
-                    dispatch_->set_host(host_);
+                    dispatcher_->set_host(host_);
                     ppbox::mux::MediaFileInfo infoTemp; //= cur_mov_->muxer->mediainfo();
-                    ec1 = dispatch_->get_info(infoTemp);
+                    ec1 = dispatcher_->get_info(infoTemp);
                     if(!ec1 && NULL != infoTemp.attachment)
                     {
                         body_ = *(std::string*)infoTemp.attachment;
                     }
                 } else {
-                    dispatch_->setup(session_id_,get_client_data_stream(),
+                    dispatcher_->setup(session_id_,get_client_data_stream(),
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
                     return;
                 }
@@ -312,7 +314,7 @@ namespace ppbox
             }
             else
             {//play
-                dispatch_->play(session_id_,
+                dispatcher_->play(session_id_,
                     io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
             }
         }

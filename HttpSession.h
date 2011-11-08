@@ -15,12 +15,14 @@ namespace ppbox
     namespace httpd
     {
         class HttpDispatcher;
+        class HttpManager;
+
         class HttpSession
             : public util::protocol::HttpProxy
         {
         public:
             HttpSession(
-                boost::asio::io_service & io_svc);
+                HttpManager & mgr);
 
             ~HttpSession();
 
@@ -79,6 +81,7 @@ namespace ppbox
             bool need_seek_;
             boost::system::error_code ec_; //保存open的成功与否
             
+            HttpDispatcher * dispatcher_;
         };
 
     } // namespace httpd

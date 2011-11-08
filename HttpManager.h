@@ -11,9 +11,11 @@ namespace ppbox
     namespace httpd
     {
         class HttpSession;
+        class HttpDispatcher;
+
         class HttpManager
             : public ppbox::common::CommonModuleBase<HttpManager>
-            , public util::protocol::HttpProxyManager<HttpSession>
+            , public util::protocol::HttpProxyManager<HttpSession,HttpManager>
         {
         public:
             virtual boost::system::error_code startup();
@@ -26,8 +28,16 @@ namespace ppbox
 
             ~HttpManager();
 
+            using ppbox::common::CommonModuleBase<HttpManager>::io_svc;
+
+            HttpDispatcher * dispatcher()
+            {
+                return dispatcher_;
+            }
+
         private:
             framework::network::NetName addr_;
+            HttpDispatcher* dispatcher_;
         };
 
     } // namespace httpd

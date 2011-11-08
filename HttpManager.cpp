@@ -16,19 +16,19 @@ namespace ppbox
     namespace httpd
     {
 
-        HttpDispatcher* dispatch_ = NULL;
 
         HttpManager::HttpManager(
             util::daemon::Daemon & daemon)
             : ppbox::common::CommonModuleBase<HttpManager>(daemon, "HttpManager")
-            , util::protocol::HttpProxyManager<HttpSession>(daemon.io_svc())
-            , addr_(framework::network::NetName("0.0.0.0:9006"))
+            , util::protocol::HttpProxyManager<HttpSession,HttpManager>(daemon.io_svc())
+            , addr_("0.0.0.0:9006")
         {
-            dispatch_ = new HttpDispatcher(daemon);
+            dispatcher_ = new HttpDispatcher(daemon);
         }
 
         HttpManager::~HttpManager()
         {
+            delete dispatcher_;
         }
 
         boost::system::error_code HttpManager::startup()
