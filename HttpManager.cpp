@@ -23,19 +23,17 @@ namespace ppbox
             , util::protocol::HttpProxyManager<HttpSession,HttpManager>(daemon.io_svc())
             , addr_("0.0.0.0:9006")
         {
-            dispatcher_ = new HttpDispatcher(daemon);
+            daemon.config().register_module("HttpManager")
+                << CONFIG_PARAM_NAME_NOACC("addr",addr_ );
         }
 
         HttpManager::~HttpManager()
         {
-            delete dispatcher_;
         }
 
         boost::system::error_code HttpManager::startup()
         {
-#ifndef _LIB
-            PPBOX_StartP2PEngine("12","1","599253c13bb94a09b73a151cf3a803ce");
-#endif
+            dispatcher_ = new HttpDispatcher(get_daemon());
             boost::system::error_code ec;
             start(addr_,ec);
             return ec;
@@ -44,6 +42,8 @@ namespace ppbox
         void HttpManager::shutdown()
         {
             stop();
+            dispatcher_->stop();
+            delete dispatcher_;
         }
 
     } // namespace httpd
