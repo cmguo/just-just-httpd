@@ -23,8 +23,8 @@ namespace ppbox
             , util::protocol::HttpProxyManager<HttpSession,HttpManager>(daemon.io_svc())
             , addr_("0.0.0.0:9006")
         {
-            daemon.config().register_module("HttpManager")
-                << CONFIG_PARAM_NAME_NOACC("addr",addr_ );
+            config().register_module("HttpManager")
+                << CONFIG_PARAM_NAME_NOACC("addr", addr_);
         }
 
         HttpManager::~HttpManager()
