@@ -2,7 +2,6 @@
 #define _PPBOX_HTTPD_RTPSINK_H_
 
 #include <ppbox/mux/tool/Sink.h>
-#include <map>
 
 namespace util
 {

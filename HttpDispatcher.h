@@ -54,6 +54,7 @@ namespace ppbox
             boost::system::error_code setup(
                 boost::uint32_t session_id, 
                 util::protocol::HttpSocket& sock,
+                bool bChunked,
                 ppbox::mux::session_callback_respone const & resp);
 
             void set_host(std::string const & host);

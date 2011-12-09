@@ -71,7 +71,8 @@ namespace ppbox
         {
             //LOG_S(Logger::kLevelEvent, "[local_process]");
 
-            error_code ec;
+            get_request_head().get_content(std::cout);
+			error_code ec;
             std::string url_path = get_request_head().path;
 
             std::string option;
@@ -98,7 +99,7 @@ namespace ppbox
 
             tmphost += url_path;
             framework::string::Url request_url(tmphost);
-
+            request_url.decode();
 
             playlink = request_url.param("playlink");
             type = request_url.param("type");
@@ -125,7 +126,7 @@ namespace ppbox
             option_ = option;
             format_ = format;
 
-            LOG_S(Logger::kLevelEvent, "[local_process] option :"<<option);
+            LOG_S(Logger::kLevelEvent, "[local_process] option :"<<option<<" format:"<<format_<<" this:"<<this);
 
             if ("mediainfo" == option)
             {//open
@@ -230,15 +231,22 @@ namespace ppbox
 
         void HttpSession::on_finish()
         {
-            LOG_S(Logger::kLevelEvent, "[on_finish] id"<<session_id_);
-            dispatcher_->close(session_id_);
+            LOG_S(Logger::kLevelEvent, "[on_finish] sessiin_id:"<<session_id_);
+            if(session_id_)
+            {
+                dispatcher_->close(session_id_);
+                session_id_ = 0;
+            }
         }
         void HttpSession::on_error(
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[on_error] id"<<session_id_);
-            LOG_S(Logger::kLevelDebug, "[on_error] ec: " << ec.message());
-            dispatcher_->close(session_id_);
+            LOG_S(Logger::kLevelDebug, "[on_error] sessiin_id:"<<session_id_<<" ec:" << ec.message());
+            if(session_id_)
+            {
+                dispatcher_->close(session_id_);
+                session_id_ = 0;
+            }
         }
 
         //Dispatch 线程
@@ -257,9 +265,18 @@ namespace ppbox
                     {
                         body_ = *(std::string*)infoTemp.attachment;
                     }
-                } else {
-                    dispatcher_->setup(session_id_,get_client_data_stream(),
+                } else 
+                {
+                    //确定用什么sink Connection: keep-alive
+#ifdef PPBOX_HTTP_CHUNKED
+                    get_response_head()["Transfer-Encoding"]="{chunked}";
+                    get_response_head()["Connection"] = "Keep-Alive";
+                    dispatcher_->setup(session_id_,get_client_data_stream(),true,
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
+#else
+                    dispatcher_->setup(session_id_,get_client_data_stream(),false,
+                        io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
+#endif
                     return;
                 }
             }
@@ -274,13 +291,15 @@ namespace ppbox
         void HttpSession::open_setupup(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[open_setupup] ");
+            LOG_S(Logger::kLevelEvent, "[open_setupup] ec:"<<ec.message());
             ec_ = ec;
             if (ec)
             {
                 make_error_response_body(body_,ec);
                 resp(ec,body_.size());
-            } else {
+            } 
+            else 
+            {
                 resp(ec, Size());
             }
         }
@@ -288,7 +307,7 @@ namespace ppbox
         void HttpSession::on_common(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[on_common] ");
+            LOG_S(Logger::kLevelEvent, "[on_common] ec:"<<ec.message());
             ec_ = ec;
             if (ec)
             {
@@ -300,14 +319,14 @@ namespace ppbox
         void HttpSession::on_playend(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[on_playend] ");
+            LOG_S(Logger::kLevelEvent, "[on_playend] ec:"<<ec.message());
             resp(ec,std::pair<std::size_t, std::size_t>(0,0));
         }
 
         void HttpSession::on_seekend(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[on_seekend] ");
+            LOG_S(Logger::kLevelEvent,"[on_seekend] ec:"<<ec.message());
             if (ec)
             {
                 resp(ec,std::pair<std::size_t, std::size_t>(0,0));
@@ -328,7 +347,7 @@ namespace ppbox
                 boost::asio::transfer_all(), 
                 ec);
 
-            LOG_S(Logger::kLevelEvent, "[write] msg size:"<<msg.size()<< " ec :"<<ec.value()<<ec.message());
+            LOG_S(Logger::kLevelDebug, "[write] msg size:"<<msg.size()<<" ec:"<<ec.message());
             return ec;
         }
 
@@ -341,7 +360,6 @@ namespace ppbox
             // set module
             respone_str += "error";
             respone_str += "\" version=\"1.0\">";
-            respone_str += "<success>0</success>";
             respone_str += "<error value=\"";
             // set error code value
             respone_str += format(last_error.value());

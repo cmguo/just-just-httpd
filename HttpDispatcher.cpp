@@ -2,6 +2,9 @@
 
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpDispatcher.h"
+
+
+#include "ppbox/httpd/HttpChunkedSink.h"
 #include "ppbox/httpd/HttpSink.h"
 
 #include <ppbox/mux/Muxer.h>
@@ -51,15 +54,32 @@ namespace ppbox
             std::string const & format,
             ppbox::mux::session_callback_respone const & resp)
         {
-            return Dispatcher::open(session_id,play_link,format,true,resp);
-        }
+            if(format == "m3u8")
+			{
+				return Dispatcher::open(session_id,play_link,format,false,resp);
+			}
+			else
+			{
+				return Dispatcher::open(session_id,play_link,format,true,resp);
+			}
+		}
 
         boost::system::error_code HttpDispatcher::setup(
             boost::uint32_t session_id, 
             util::protocol::HttpSocket& sock,
+            bool bChunked,
             ppbox::mux::session_callback_respone const & resp)
         {
-            HttpSink* sink = new HttpSink(sock);
+            ppbox::mux::Sink* sink = NULL;
+            
+			if (bChunked)
+            {
+                sink = new HttpChunkedSink(sock);
+            }
+            else
+            {
+                sink = new HttpSink(sock);
+            }
             return Dispatcher::setup(session_id,sink,resp);
         }
 
@@ -76,7 +96,6 @@ namespace ppbox
                 const char* strXMLContent =
                     "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
                     "<template module=\"mediainfo\" version=\"1.0\">"
-                    "<success>0</success>"
                     "</template>";
 
                 doc.Parse( strXMLContent );
@@ -92,25 +111,34 @@ namespace ppbox
 
                     TiXmlElement video("video");
                     video.SetAttribute("codec", "h264");
-                    if (media_info.video_index != boost::uint32_t(-1)) {
-                        ppbox::demux::MediaInfo const & video_stream_info = media_info.stream_infos[media_info.video_index];
-                        TiXmlElement videoproperty("property");
-                        videoproperty.SetAttribute("frame-rate", format(video_stream_info.video_format.frame_rate).c_str());
-                        videoproperty.SetAttribute("width", format(video_stream_info.video_format.width).c_str());
-                        videoproperty.SetAttribute("height", format(video_stream_info.video_format.height).c_str());
-                        video.InsertEndChild(videoproperty);
+                    for (boost::uint32_t i = 0; i < media_info.stream_infos.size(); ++i) {
+                        if (media_info.stream_infos[i].type == ppbox::demux::MEDIA_TYPE_VIDE) {
+                            ppbox::demux::MediaInfo const & video_stream_info = media_info.stream_infos[i];
+                            TiXmlElement videoproperty("property");
+                            videoproperty.SetAttribute("frame-rate", format(video_stream_info.video_format.frame_rate).c_str());
+                            videoproperty.SetAttribute("width", format(video_stream_info.video_format.width).c_str());
+                            videoproperty.SetAttribute("height", format(video_stream_info.video_format.height).c_str());
+                            video.InsertEndChild(videoproperty);
+                            break;
+                        }
                     }
 
-
                     TiXmlElement audio("audio");
-                    audio.SetAttribute("codec", "aac");
-                    if (media_info.audio_index != boost::uint32_t(-1)) {
-                        ppbox::demux::MediaInfo const & audio_stream_info = media_info.stream_infos[media_info.audio_index];
-                        TiXmlElement audioproperty("property");
-                        audioproperty.SetAttribute("channels", format(audio_stream_info.audio_format.channel_count).c_str());
-                        audioproperty.SetAttribute("sample-rate", format(audio_stream_info.audio_format.sample_rate).c_str());
-                        audioproperty.SetAttribute("sample-size", format(audio_stream_info.audio_format.sample_size).c_str());
-                        audio.InsertEndChild(audioproperty);
+                    for (boost::uint32_t i = 0; i < media_info.stream_infos.size(); ++i) {
+                        if (media_info.stream_infos[i].type == ppbox::demux::MEDIA_TYPE_AUDI) {
+                            ppbox::demux::MediaInfo const & audio_stream_info = media_info.stream_infos[i];
+                            if (audio_stream_info.sub_type == ppbox::demux::AUDIO_TYPE_MP4A) { 
+                                audio.SetAttribute("codec", "aac");
+                            } else if (audio_stream_info.sub_type == ppbox::demux::AUDIO_TYPE_MP1A) {
+                                audio.SetAttribute("codec", "mpeg_audio");
+                            }
+                            TiXmlElement audioproperty("property");
+                            audioproperty.SetAttribute("channels", format(audio_stream_info.audio_format.channel_count).c_str());
+                            audioproperty.SetAttribute("sample-rate", format(audio_stream_info.audio_format.sample_rate).c_str());
+                            audioproperty.SetAttribute("sample-size", format(audio_stream_info.audio_format.sample_size).c_str());
+                            audio.InsertEndChild(audioproperty);
+                            break;
+                        }
                     }
 
                     element->InsertEndChild(duration);
