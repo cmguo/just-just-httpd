@@ -75,13 +75,15 @@ namespace ppbox
             std::string format_;  //transfer_response_data判断上次处理的什么消息
             std::string body_;    //保存回复的消息体
             std::string host_;   //保留host地址
+			std::string head_;
             boost::uint32_t len_;
             boost::uint32_t session_id_;
             boost::uint32_t seek_; //保存seek的位置
             bool need_seek_;
             boost::system::error_code ec_; //保存open的成功与否
-            
+             
             HttpDispatcher * dispatcher_;
+			
         };
 
     } // namespace httpd

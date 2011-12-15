@@ -104,12 +104,16 @@ namespace ppbox
 
             playlink = request_url.param("playlink");
             type = request_url.param("type");
-
+            head_ = request_url.param("head");
             if (!playlink.empty())
             {
                 type = type +  "://";
                 playlink = type + playlink;
             }
+			if(head_.empty())
+			{
+				head_ = "1";
+			}
 
             format = request_url.param("format");
 
@@ -141,8 +145,9 @@ namespace ppbox
                     seek = atoi(request_url.param("time").c_str());
                     seek *= 1000;
                 }
-                dispatcher_->seek(session_id_,seek,0,
-                    boost::bind(&HttpSession::on_common,this,resp,_1));
+                dispatcher_->seek(session_id_,seek
+						,(head_ == "0")?boost::uint32_t(-1):0
+						,boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("pause" == option)
             {
@@ -219,8 +224,9 @@ namespace ppbox
                 }
                 else
                 {//Seek
-                    dispatcher_->seek(session_id_,seek_,0,
-                        io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
+                    dispatcher_->seek(session_id_,seek_
+							,(head_ == "0")?boost::uint32_t(-1):0
+							,io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
                     seek_ = 0;
                     need_seek_ = false;
                 }
@@ -308,7 +314,10 @@ namespace ppbox
             } 
             else 
             {
-                resp(ec, len_);
+				if(len_ > 0)
+                    resp(ec, len_);
+				else
+					resp(ec,Size());
             }
         }
 
