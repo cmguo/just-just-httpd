@@ -51,7 +51,8 @@ namespace ppbox
             HttpManager & mgr)
             : HttpProxy(mgr.io_svc())
             ,io_svc_(mgr.io_svc())
-            ,session_id_(0)
+            ,len_(0)
+			,session_id_(0)
             ,seek_(0)
             ,need_seek_(false)
         {
@@ -274,6 +275,13 @@ namespace ppbox
                     dispatcher_->setup(session_id_,get_client_data_stream(),true,
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
 #else
+					ppbox::mux::MediaFileInfo infoTemp;
+					ec1 = dispatcher_->get_info(infoTemp);
+					if(!ec1)
+					{
+						len_ = infoTemp.filesize;
+						LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
+					}
                     dispatcher_->setup(session_id_,get_client_data_stream(),false,
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
 #endif
@@ -300,7 +308,7 @@ namespace ppbox
             } 
             else 
             {
-                resp(ec, Size());
+                resp(ec, len_);
             }
         }
 
