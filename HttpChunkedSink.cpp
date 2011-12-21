@@ -25,7 +25,8 @@ namespace ppbox
         {
         }
 
-        boost::system::error_code HttpChunkedSink::on_finish( boost::system::error_code const & ec)
+        boost::system::error_code HttpChunkedSink::on_finish(
+            boost::system::error_code const & ec)
         {
             boost::system::error_code ec1;
             socket_.send(util::protocol::HttpChunkedSocket<util::protocol::HttpSocket>::eof(),0,ec1);
@@ -35,6 +36,7 @@ namespace ppbox
 
         //工作线程调用
         boost::system::error_code HttpChunkedSink::write(
+            boost::posix_time::ptime const & time_send, 
             ppbox::demux::Sample & sample)
         {
             boost::system::error_code ec;

@@ -31,9 +31,11 @@ namespace ppbox
 
         private:
             virtual boost::system::error_code write(
+                boost::posix_time::ptime const & time_send, 
                 ppbox::demux::Sample & sample);
 
-            boost::system::error_code on_finish( boost::system::error_code const & ec);
+            boost::system::error_code on_finish(
+                boost::system::error_code const & ec);
 
         private:
             util::protocol::HttpChunkedSocket<util::protocol::HttpSocket> socket_;

@@ -45,6 +45,13 @@ namespace ppbox
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);
 
+            boost::system::error_code open_playinfo(
+                boost::uint32_t& session_id,
+                std::string const & play_link,
+                std::string const & format,
+                std::string & body,
+                ppbox::mux::session_callback_respone const &);
+
             boost::system::error_code open_for_play(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
@@ -60,6 +67,11 @@ namespace ppbox
             void set_host(std::string const & host);
         private:
             void mediainfo_callback(
+                std::string& rtp_info,
+                ppbox::mux::session_callback_respone const &resp,
+                boost::system::error_code ec);
+            
+            void playinfo_callback(
                 std::string& rtp_info,
                 ppbox::mux::session_callback_respone const &resp,
                 boost::system::error_code ec);

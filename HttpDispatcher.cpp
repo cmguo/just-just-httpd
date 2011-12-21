@@ -48,6 +48,17 @@ namespace ppbox
                 boost::bind(&HttpDispatcher::mediainfo_callback,this,boost::ref(body),resp,_1));
         }
 
+        boost::system::error_code HttpDispatcher::open_playinfo(
+            boost::uint32_t& session_id,
+            std::string const & play_link,
+            std::string const & format,
+            std::string & body,
+            ppbox::mux::session_callback_respone const & resp)
+        {
+            return Dispatcher::open(session_id,play_link,format,false,
+                boost::bind(&HttpDispatcher::playinfo_callback,this,boost::ref(body),resp,_1));
+        }
+
         boost::system::error_code HttpDispatcher::open_for_play(
             boost::uint32_t& session_id,
             std::string const & play_link,
@@ -81,6 +92,51 @@ namespace ppbox
                 sink = new HttpSink(sock);
             }
             return Dispatcher::setup(session_id,sink,resp);
+        }
+
+        void HttpDispatcher::playinfo_callback(
+            std::string& rtp_info,
+            ppbox::mux::session_callback_respone const &resp,
+            boost::system::error_code ec)
+        {
+            if (!ec)
+            {
+                boost::system::error_code ec1;
+                boost::system::error_code ec2;
+                boost::uint32_t time = cur_mov_->demuxer->get_buffer_time(ec1,ec2);
+                if (ec1 || ec2)
+                {
+                    resp(ec1?ec1:ec2);
+                    return;
+                }
+                else
+                {
+                    TiXmlDocument doc;
+                    const char* strXMLContent =
+                        "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                        "<template module=\"playinfo\" version=\"1.0\">"
+                        "</template>";
+
+                    doc.Parse( strXMLContent );
+
+                    TiXmlNode* node = 0;
+                    TiXmlElement* element = 0;
+                    node = doc.FirstChild( "template" );
+                    element = node->ToElement();
+
+                    TiXmlElement time_xml("time ");
+                    time_xml.SetAttribute("value", format(time).c_str());
+
+                    element->InsertEndChild(time_xml);
+
+                    TiXmlPrinter printer;
+                    printer.SetStreamPrinting();
+                    doc.Accept( &printer );
+                    rtp_info = printer.CStr();
+                }
+            }
+            resp(ec);
+
         }
 
         void HttpDispatcher::mediainfo_callback(

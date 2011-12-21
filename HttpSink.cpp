@@ -25,6 +25,7 @@ namespace ppbox
 
         //工作线程调用
         boost::system::error_code HttpSink::write(
+            boost::posix_time::ptime const & time_send, 
             ppbox::demux::Sample& tag)
         {
 

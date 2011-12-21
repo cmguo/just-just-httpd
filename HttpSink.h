@@ -21,10 +21,15 @@ namespace ppbox
         {
         public:
             HttpSink(util::protocol::HttpSocket& sock);
+
             virtual ~HttpSink();
 
         private:
-            virtual boost::system::error_code write(ppbox::demux::Sample&);
+            virtual boost::system::error_code write(
+                boost::posix_time::ptime const & time_send, 
+                ppbox::demux::Sample&);
+
+        private:
             util::protocol::HttpSocket& socket_;
 
         };

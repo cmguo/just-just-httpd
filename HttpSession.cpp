@@ -138,6 +138,11 @@ namespace ppbox
                 dispatcher_->open_mediainfo(session_id_,playlink,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
+            else if ("playinfo" == option)
+            {//open
+                dispatcher_->open_playinfo(session_id_,playlink,format,body_,
+                    boost::bind(&HttpSession::on_common,this,resp,_1));
+            }
             else if ("seek" == option)
             {
                 boost::uint32_t seek = 0;
@@ -294,11 +299,12 @@ namespace ppbox
                     return;
                 }
             }
-            if (ec1)
+            ec_ = ec1;
+            if (ec_)
             {
-                make_error_response_body(body_,ec);
+                make_error_response_body(body_,ec_);
             }
-            io_svc_.post(boost::bind(resp, ec,body_.size()));
+            io_svc_.post(boost::bind(resp, ec_,body_.size()));
         }
 
         // 主线程 下面
@@ -309,13 +315,13 @@ namespace ppbox
             ec_ = ec;
             if (ec)
             {
-                make_error_response_body(body_,ec);
-                resp(ec,body_.size());
+                make_error_response_body(body_,ec_);
+                resp(ec_,body_.size());
             } 
             else 
             {
 				if(len_ > 0)
-                    resp(ec, len_);
+                    resp(ec, (size_t)len_);
 				else
 					resp(ec,Size());
             }
@@ -328,9 +334,9 @@ namespace ppbox
             ec_ = ec;
             if (ec)
             {
-                make_error_response_body(body_,ec);
+                make_error_response_body(body_,ec_);
             }
-            io_svc_.post(boost::bind(resp, ec,body_.size()));
+            io_svc_.post(boost::bind(resp, ec_,body_.size()));
         }
 
         void HttpSession::on_playend(response_type const &resp,
@@ -370,26 +376,25 @@ namespace ppbox
 
         void HttpSession::make_error_response_body(
             std::string& respone_str, 
-            error_code const & last_error)
+            boost::system::error_code const & last_error)
         {
-            respone_str = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-                "<template module=\"";
-            // set module
-            respone_str += "error";
-            respone_str += "\" version=\"1.0\">";
-            respone_str += "<error value=\"";
+            
+            get_response().head().err_code = 500;
+            get_response().head().err_msg = "Internal Server Error";
+
+            respone_str = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<root>\r\n<category>";
             // set error code value
+            respone_str += last_error.category().name();
+            respone_str += "</category>\r\n<vaule>";
             respone_str += format(last_error.value());
-            respone_str += "\" msg=\"";
+            respone_str += "</vaule>\r\n<message>";
             // set error msg
             if (last_error) {
                 respone_str += last_error.message();
             } else {
                 respone_str += "";
             }
-
-            respone_str += "\"></error>";
-            respone_str += "</template>";
+            respone_str += "</message>\r\n</root>";
         }
 
     } // namespace httpd
