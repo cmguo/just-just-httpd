@@ -2,21 +2,23 @@
 
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpDispatcher.h"
-
-
 #include "ppbox/httpd/HttpChunkedSink.h"
 #include "ppbox/httpd/HttpSink.h"
 
 #include <ppbox/mux/Muxer.h>
 
+
+
 #include <tinyxml/tinyxml.h>
+
+#include <framework/system/LogicError.h>
+#include <framework/logger/LoggerStreamRecord.h>
+using namespace framework::logger;
+using namespace framework::system::logic_error;
+
 #include <boost/bind.hpp>
 #include <boost/thread/thread.hpp>
-#include <framework/system/LogicError.h>
-using namespace framework::system::logic_error;
-using namespace framework::logger;
 using namespace boost::system;
-using namespace util::protocol;
 
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpDispatcher", 0)
 
@@ -75,6 +77,18 @@ namespace ppbox
 			}
 		}
 
+        boost::system::error_code HttpDispatcher::get_file_length(boost::uint32_t& len)
+        {
+            boost::system::error_code ec1;
+            ppbox::mux::MediaFileInfo infoTemp;
+            ec1 = get_info(infoTemp);
+            if(!ec1)
+            {
+                len = infoTemp.filesize;
+            }
+            return ec1;
+        }
+
         boost::system::error_code HttpDispatcher::setup(
             boost::uint32_t session_id, 
             util::protocol::HttpSocket& sock,
@@ -92,6 +106,16 @@ namespace ppbox
                 sink = new HttpSink(sock);
             }
             return Dispatcher::setup(session_id,sink,resp);
+        }
+
+        boost::system::error_code HttpDispatcher::play(
+            boost::uint32_t size_beg, 
+            ppbox::mux::session_callback_respone const & resp)
+        {
+            boost::system::error_code ec;
+            assert(0);
+            resp(ec);
+            return ec;
         }
 
         void HttpDispatcher::playinfo_callback(

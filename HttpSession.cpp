@@ -8,36 +8,33 @@
 #include "ppbox/httpd/HttpSink.h"
 #include "ppbox/httpd/HttpDispatcher.h"
 #include "ppbox/httpd/HttpManager.h"
-
-
-#include <ppbox/mux/MuxerBase.h>
-
+#include "ppbox/httpd/Mp4HttpDispatcher.h"
 using namespace ppbox::httpd::error;
 using namespace ppbox::httpd;
 
-#include <framework/string/Url.h>
-#include <boost/lexical_cast.hpp>
+#include <ppbox/mux/MuxerBase.h>
 
 #include <util/protocol/http/HttpSocket.h>
 using namespace util::protocol;
-using namespace boost::system;
-using namespace framework::network;
 
+#include <framework/string/Url.h>
 #include <framework/string/Base64.h>
+#include <framework/logger/LoggerStreamRecord.h>
+using namespace framework::network;
 using namespace framework::string;
 using namespace framework::logger;
 
+#include <tinyxml/tinyxml.h>
+
+#include <boost/lexical_cast.hpp>
 #include <boost/bind.hpp>
 using namespace boost::system;
 using namespace boost::asio;
+using namespace boost::system;
 
-#include <tinyxml/tinyxml.h>
 #include <vector>
 
 FRAMEWORK_LOGGER_DECLARE_MODULE("HttpSession");
-
-//#define LOG_S(a,b) std::cout<<b<<std::endl; 
-
 
 namespace ppbox
 {
@@ -61,6 +58,11 @@ namespace ppbox
 
         HttpSession::~HttpSession()
         {
+            if(g_format_ == "mp4")
+            {
+                delete dispatcher_;
+                dispatcher_ = NULL;
+            }
         }
 
         bool HttpSession::on_receive_request_head(HttpRequestHead & request_head)
@@ -178,6 +180,10 @@ namespace ppbox
                     need_seek_ = true;
                 }
                 g_format_ = format;
+                if(g_format_ == "mp4")
+                {
+                    dispatcher_ = new Mp4HttpDispatcher(global_daemon());
+                }
                 dispatcher_->open_for_play(session_id_,playlink,format,
                     boost::bind(&HttpSession::on_open,this,resp,_1));
             }
@@ -220,20 +226,28 @@ namespace ppbox
                 resp(ec_,tSize);
             }
             else
-            {   
-                //open most
-                if (!need_seek_ )
-                { //直接Play
-                    dispatcher_->play(session_id_,
+            {
+                if(g_format_ == "mp4")
+                {
+                    dispatcher_->play(seek_,
                         io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
                 }
                 else
-                {//Seek
-                    dispatcher_->seek(session_id_,seek_
-							,(head_ == "0")?boost::uint32_t(-1):0
-							,io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
-                    seek_ = 0;
-                    need_seek_ = false;
+                {
+                    //open most
+                    if (!need_seek_ )
+                    { //直接Play
+                        dispatcher_->play(session_id_,
+                            io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
+                    }
+                    else
+                    {//Seek
+                        dispatcher_->seek(session_id_,seek_
+                            ,(head_ == "0")?boost::uint32_t(-1):0
+                            ,io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
+                        seek_ = 0;
+                        need_seek_ = false;
+                    }
                 }
                 return;
             }
@@ -286,13 +300,9 @@ namespace ppbox
                     dispatcher_->setup(session_id_,get_client_data_stream(),true,
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
 #else
-					ppbox::mux::MediaFileInfo infoTemp;
-					ec1 = dispatcher_->get_info(infoTemp);
-					if(!ec1)
-					{
-						len_ = infoTemp.filesize;
-						LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
-					}
+                    dispatcher_->get_file_length(len_);
+                    LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
+
                     dispatcher_->setup(session_id_,get_client_data_stream(),false,
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
 #endif

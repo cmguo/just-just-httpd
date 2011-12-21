@@ -6,6 +6,8 @@
 #include <ppbox/mux/MuxerBase.h>
 
 #include <util/protocol/http/HttpSocket.h>
+
+#include <framework/logger/LoggerStreamRecord.h>
 using namespace framework::logger;
 
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpChunkedSink", 0)

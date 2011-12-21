@@ -38,33 +38,40 @@ namespace ppbox
 
             ~HttpDispatcher();
 
-            boost::system::error_code open_mediainfo(
+            virtual boost::system::error_code open_mediainfo(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
                 std::string const & format,
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);
 
-            boost::system::error_code open_playinfo(
+            virtual boost::system::error_code open_playinfo(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
                 std::string const & format,
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);
 
-            boost::system::error_code open_for_play(
+            virtual boost::system::error_code open_for_play(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
                 std::string const & format,
                 ppbox::mux::session_callback_respone const &);
 
-            boost::system::error_code setup(
+            virtual boost::system::error_code setup(
                 boost::uint32_t session_id, 
                 util::protocol::HttpSocket& sock,
                 bool bChunked,
                 ppbox::mux::session_callback_respone const & resp);
 
+            virtual boost::system::error_code play(
+                boost::uint32_t size_beg, 
+                ppbox::mux::session_callback_respone const & resp);
+
             void set_host(std::string const & host);
+        
+            virtual boost::system::error_code get_file_length(boost::uint32_t& len);
+
         private:
             void mediainfo_callback(
                 std::string& rtp_info,
