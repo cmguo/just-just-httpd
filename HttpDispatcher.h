@@ -65,8 +65,14 @@ namespace ppbox
                 ppbox::mux::session_callback_respone const & resp);
 
             virtual boost::system::error_code play(
-                boost::uint32_t size_beg, 
+                boost::uint32_t session_id, 
                 ppbox::mux::session_callback_respone const & resp);
+
+            virtual boost::system::error_code seek(
+                const boost::uint32_t session_id
+                ,const boost::uint32_t begin
+                ,const boost::uint32_t end
+                ,ppbox::mux::session_callback_respone const &);
 
             void set_host(std::string const & host);
         

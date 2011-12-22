@@ -153,8 +153,8 @@ namespace ppbox
                     seek *= 1000;
                 }
                 dispatcher_->seek(session_id_,seek
-						,(head_ == "0")?boost::uint32_t(-1):0
-						,boost::bind(&HttpSession::on_common,this,resp,_1));
+                    ,(head_ == "0")?boost::uint32_t(-1):0
+                    ,boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("pause" == option)
             {
@@ -179,6 +179,7 @@ namespace ppbox
                     seek_ *= 1000;
                     need_seek_ = true;
                 }
+                //Range Here
                 g_format_ = format;
                 if(g_format_ == "mp4")
                 {
@@ -227,27 +228,19 @@ namespace ppbox
             }
             else
             {
-                if(g_format_ == "mp4")
-                {
-                    dispatcher_->play(seek_,
+                //open most
+                if (!need_seek_ )
+                { //直接Play
+                    dispatcher_->play(session_id_,
                         io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
                 }
                 else
-                {
-                    //open most
-                    if (!need_seek_ )
-                    { //直接Play
-                        dispatcher_->play(session_id_,
-                            io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
-                    }
-                    else
-                    {//Seek
-                        dispatcher_->seek(session_id_,seek_
-                            ,(head_ == "0")?boost::uint32_t(-1):0
-                            ,io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
-                        seek_ = 0;
-                        need_seek_ = false;
-                    }
+                {//Seek
+                    dispatcher_->seek(session_id_,seek_
+                        ,(head_ == "0")?boost::uint32_t(-1):0
+                        ,io_svc_.wrap(boost::bind(&HttpSession::on_seekend,this,resp,_1)));
+                    seek_ = 0;
+                    need_seek_ = false;
                 }
                 return;
             }

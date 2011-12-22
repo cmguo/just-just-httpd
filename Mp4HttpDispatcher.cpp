@@ -51,6 +51,7 @@ namespace ppbox
             ,bigmp4_(daemon.io_svc())
             ,stream_(NULL)
             ,streambuf_(NULL)
+            ,seek_(0)
         {
 
         }
@@ -99,14 +100,26 @@ namespace ppbox
         }
 
         boost::system::error_code Mp4HttpDispatcher::play(
-            boost::uint32_t size_beg, 
+            boost::uint32_t session_id, 
             ppbox::mux::session_callback_respone const & resp)
         {
             bigmp4_.async_tranfer(
-                size_beg
+                seek_
                 ,*stream_
                 ,resp);
             return boost::system::error_code();
+        }
+
+        boost::system::error_code Mp4HttpDispatcher::seek(
+            const boost::uint32_t session_id
+            ,const boost::uint32_t begin
+            ,const boost::uint32_t end
+            ,ppbox::mux::session_callback_respone const &resp)
+        {
+            boost::system::error_code ec;
+            seek_ = begin;
+            resp(ec);
+            return ec;
         }
 
         boost::system::error_code Mp4HttpDispatcher::get_file_length(boost::uint32_t& len)

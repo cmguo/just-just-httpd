@@ -108,14 +108,21 @@ namespace ppbox
             return Dispatcher::setup(session_id,sink,resp);
         }
 
+
         boost::system::error_code HttpDispatcher::play(
-            boost::uint32_t size_beg, 
+            boost::uint32_t session_id, 
             ppbox::mux::session_callback_respone const & resp)
         {
-            boost::system::error_code ec;
-            assert(0);
-            resp(ec);
-            return ec;
+            return Dispatcher::play(session_id,resp);
+        }
+
+        boost::system::error_code HttpDispatcher::seek(
+            const boost::uint32_t session_id
+            ,const boost::uint32_t begin
+            ,const boost::uint32_t end
+            ,ppbox::mux::session_callback_respone const &resp)
+        {
+            return Dispatcher::seek(session_id,begin,end,resp);
         }
 
         void HttpDispatcher::playinfo_callback(

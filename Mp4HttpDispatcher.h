@@ -62,9 +62,15 @@ namespace ppbox
                 bool bChunked,
                 ppbox::mux::session_callback_respone const & resp);
 
-            boost::system::error_code play(
-                boost::uint32_t size_beg, 
+            virtual boost::system::error_code play(
+                boost::uint32_t session_id, 
                 ppbox::mux::session_callback_respone const & resp);
+
+            virtual boost::system::error_code seek(
+                const boost::uint32_t session_id
+                ,const boost::uint32_t begin
+                ,const boost::uint32_t end
+                ,ppbox::mux::session_callback_respone const &);
 
             boost::system::error_code get_file_length(boost::uint32_t& len);
 
@@ -75,6 +81,8 @@ namespace ppbox
             std::stringstream stream_tmp_;
             std::ostream *stream_;
             MyStream *streambuf_;
+
+            boost::uint32_t seek_;
         };
 
     } // namespace rtspd
