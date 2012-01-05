@@ -58,10 +58,10 @@ namespace ppbox
 
         HttpSession::~HttpSession()
         {
-            if(g_format_ == "mp4")
+            if(session_id_)
             {
-                delete dispatcher_;
-                dispatcher_ = NULL;
+                dispatcher_->close(session_id_);
+                session_id_ = 0;
             }
         }
 
@@ -183,7 +183,16 @@ namespace ppbox
                 g_format_ = format;
                 if(g_format_ == "mp4")
                 {
-                    dispatcher_ = new Mp4HttpDispatcher(global_daemon());
+                    static HttpDispatcher* g_mp4Dispather = NULL;
+                    if(NULL == g_mp4Dispather) g_mp4Dispather =  new Mp4HttpDispatcher(global_daemon());
+
+                    if(request().head().range.is_initialized())
+                    {
+
+                        seek_ = get_request_head().range.get()[0].begin();
+                        need_seek_ = true;
+                    }
+                    dispatcher_ = g_mp4Dispather;
                 }
                 dispatcher_->open_for_play(session_id_,playlink,format,
                     boost::bind(&HttpSession::on_open,this,resp,_1));
@@ -295,6 +304,15 @@ namespace ppbox
 #else
                     dispatcher_->get_file_length(len_);
                     LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
+                    if (need_seek_)
+                    {
+                        if(seek_ > 0 && g_format_ == "mp4")
+                        {
+                            len_ -= seek_;
+                            get_response().head().err_code = 206;
+                            get_response().head().err_msg = "Partial Content";
+                        }
+                    }
 
                     dispatcher_->setup(session_id_,get_client_data_stream(),false,
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));

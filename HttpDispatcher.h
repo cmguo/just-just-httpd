@@ -74,6 +74,9 @@ namespace ppbox
                 ,const boost::uint32_t end
                 ,ppbox::mux::session_callback_respone const &);
 
+            virtual boost::system::error_code close(
+                const boost::uint32_t session_id);
+
             void set_host(std::string const & host);
         
             virtual boost::system::error_code get_file_length(boost::uint32_t& len);

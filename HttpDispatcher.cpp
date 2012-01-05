@@ -125,6 +125,12 @@ namespace ppbox
             return Dispatcher::seek(session_id,begin,end,resp);
         }
 
+        boost::system::error_code HttpDispatcher::close(
+            const boost::uint32_t session_id)
+        {
+            return Dispatcher::close(session_id);
+        }
+
         void HttpDispatcher::playinfo_callback(
             std::string& rtp_info,
             ppbox::mux::session_callback_respone const &resp,
