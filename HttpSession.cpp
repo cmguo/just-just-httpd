@@ -135,13 +135,16 @@ namespace ppbox
 
             LOG_S(Logger::kLevelEvent, "[local_process] option :"<<option<<" format:"<<format_<<" this:"<<this);
 
+
             if ("mediainfo" == option)
             {//open
+                get_response_head()["Content-Type"]="{application/xml}";
                 dispatcher_->open_mediainfo(session_id_,playlink,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("playinfo" == option)
             {//open
+                get_response_head()["Content-Type"]="{application/xml}";
                 dispatcher_->open_playinfo(session_id_,playlink,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
@@ -286,6 +289,7 @@ namespace ppbox
             {
                 if (format_ == "m3u8") 
                 {
+                    get_response_head()["Connection"] = "Close";
                     dispatcher_->set_host(host_);
                     ppbox::mux::MediaFileInfo infoTemp; //= cur_mov_->muxer->mediainfo();
                     ec1 = dispatcher_->get_info(infoTemp);
@@ -340,7 +344,25 @@ namespace ppbox
                 resp(ec_,body_.size());
             } 
             else 
-            {
+            {//与播放相关
+                //type
+                if(format_  == "ts")
+                {
+                    get_response_head()["Content-Type"]="{video/ts}";
+                }
+                else if(format_ == "flv")
+                {
+                    get_response_head()["Content-Type"]="{video/flv}";
+                }
+                else if(format_ == "mp4")
+                {
+                    get_response_head()["Content-Type"]="{video/mp4}";
+                }
+                else
+                {
+                    LOG_S(Logger::kLevelError, "[open_setupup] format_:"<<format_);
+                }
+
 				if(len_ > 0)
                     resp(ec, (size_t)len_);
 				else
@@ -402,6 +424,7 @@ namespace ppbox
             
             get_response().head().err_code = 500;
             get_response().head().err_msg = "Internal Server Error";
+            get_response_head()["Content-Type"]="{application/xml}";
 
             respone_str = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<root>\r\n<category>";
             // set error code value
