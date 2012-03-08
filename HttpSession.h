@@ -66,8 +66,11 @@ namespace ppbox
                 std::string& respone_str,
                 boost::system::error_code const & last_error);
 
+            void Close();
+
         private:
             static std::string g_format_;  //保存上一次的format
+            static bool g_record_; //记录play还是recoder
 
         private:
             boost::asio::io_service & io_svc_;

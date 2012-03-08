@@ -43,6 +43,7 @@ namespace ppbox
 
 
         std::string HttpSession::g_format_;
+        bool HttpSession::g_record_ = false;
 
         HttpSession::HttpSession(
             HttpManager & mgr)
@@ -58,11 +59,7 @@ namespace ppbox
 
         HttpSession::~HttpSession()
         {
-            if(session_id_)
-            {
-                dispatcher_->close(session_id_);
-                session_id_ = 0;
-            }
+            HttpSession::Close();
         }
 
         bool HttpSession::on_receive_request_head(HttpRequestHead & request_head)
@@ -75,16 +72,15 @@ namespace ppbox
             //LOG_S(Logger::kLevelEvent, "[local_process]");
 
             get_request_head().get_content(std::cout);
-			error_code ec;
-            std::string url_path = get_request_head().path;
+            error_code ec;
+            std::string tmphost = "http://host";
+            framework::string::Url url(tmphost + get_request_head().path);
+            std::string url_path(url.path_all());
 
             std::string option;
-
             std::string playlink;
             std::string type;
             std::string format;
-
-            std::string tmphost = "http://host";
 
             std::string url_profix = "base64";
 
@@ -102,20 +98,23 @@ namespace ppbox
 
             tmphost += url_path;
             framework::string::Url request_url(tmphost);
-            request_url.decode();
+            //request_url.decode();
 
             playlink = request_url.param("playlink");
             type = request_url.param("type");
             head_ = request_url.param("head");
-            if (!playlink.empty())
+            if (!type.empty())
             {
                 type = type +  "://";
                 playlink = type + playlink;
             }
-			if(head_.empty())
-			{
-				head_ = "1";
-			}
+
+            playlink = framework::string::Url::decode(playlink);
+
+            if(head_.empty())
+            {
+                head_ = "1";
+            }
 
             format = request_url.param("format");
 
@@ -173,7 +172,7 @@ namespace ppbox
             {
 
             }
-            else if("play" == option) 
+            else if("play" == option || "record" == option) 
             {
 
                 if (!request_url.param("seek").empty()) 
@@ -184,6 +183,8 @@ namespace ppbox
                 }
                 //Range Here
                 g_format_ = format;
+                g_record_ = (option == "record")?true:false;
+
                 if(g_format_ == "mp4")
                 {
                     static HttpDispatcher* g_mp4Dispather = NULL;
@@ -203,10 +204,10 @@ namespace ppbox
             else  
             {
                 //open setup seek play
-                option_ = "play";
-
                 if (g_format_ == "m3u8" && "ts" == format)
                 {
+                    option_ = g_record_?"record":"play";
+
                     seek_ = atoi(option.c_str());
                     need_seek_ = true;
 
@@ -225,13 +226,16 @@ namespace ppbox
 
         void HttpSession::transfer_response_data(response_type const & resp)
         {
+            get_response_head().get_content(std::cout);
             //mediainfo  m3u8  xml
             //play seek  Play  
             std::string response_str;
             LOG_S(Logger::kLevelEvent, "[transfer_response_data] ");
 
-            if (ec_ || option_ != "play" || !body_.empty())
+            
+            if (!body_.empty() || (option_ != "play" && option_ != "record"))
             {
+                std::cout<<body_<<std::endl;
                 size_t tSize = body_.size();
                 ec_ = write(body_);
                 LOG_S(Logger::kLevelEvent, "[transfer_response_data] "<<option_);
@@ -243,8 +247,7 @@ namespace ppbox
                 //open most
                 if (!need_seek_ )
                 { //直接Play
-                    dispatcher_->play(session_id_,
-                        io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
+                    io_svc_.post(boost::bind(&HttpSession::on_seekend,this,resp,ec_));
                 }
                 else
                 {//Seek
@@ -263,21 +266,13 @@ namespace ppbox
         void HttpSession::on_finish()
         {
             LOG_S(Logger::kLevelEvent, "[on_finish] sessiin_id:"<<session_id_);
-            if(session_id_)
-            {
-                dispatcher_->close(session_id_);
-                session_id_ = 0;
-            }
+            HttpSession::Close();
         }
         void HttpSession::on_error(
             boost::system::error_code const & ec)
         {
             LOG_S(Logger::kLevelDebug, "[on_error] sessiin_id:"<<session_id_<<" ec:" << ec.message());
-            if(session_id_)
-            {
-                dispatcher_->close(session_id_);
-                session_id_ = 0;
-            }
+            HttpSession::Close();
         }
 
         //Dispatch 线程
@@ -289,6 +284,7 @@ namespace ppbox
             {
                 if (format_ == "m3u8") 
                 {
+                    get_response_head()["Content-Type"]="{application/x-mpegURL}";
                     get_response_head()["Connection"] = "Close";
                     dispatcher_->set_host(host_);
                     ppbox::mux::MediaFileInfo infoTemp; //= cur_mov_->muxer->mediainfo();
@@ -348,11 +344,11 @@ namespace ppbox
                 //type
                 if(format_  == "ts")
                 {
-                    get_response_head()["Content-Type"]="{video/ts}";
+                    get_response_head()["Content-Type"]="{video/MP2T}";
                 }
                 else if(format_ == "flv")
                 {
-                    get_response_head()["Content-Type"]="{video/flv}";
+                    get_response_head()["Content-Type"]="{video/x-flv}";
                 }
                 else if(format_ == "mp4")
                 {
@@ -399,8 +395,16 @@ namespace ppbox
             }
             else
             {//play
-                dispatcher_->play(session_id_,
-                    io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
+                if (!g_record_)
+                {
+                    dispatcher_->play(session_id_,
+                        io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
+                }
+                else 
+                {
+                    dispatcher_->record(session_id_,
+                        io_svc_.wrap(boost::bind(&HttpSession::on_playend,this,resp,_1)));
+                }
             }
         }
 
@@ -439,6 +443,22 @@ namespace ppbox
                 respone_str += "";
             }
             respone_str += "</message>\r\n</root>";
+        }
+
+        void HttpSession::Close()
+        {
+            if(session_id_)
+            {
+                if (g_format_ == "m3u8" && "ts" == format_)
+                {
+                    LOG_S(Logger::kLevelEvent, "[Close] m3u8/ts not close session_id:"<<session_id_);
+                }
+                else
+                {
+                    dispatcher_->close(session_id_);
+                }
+                session_id_ = 0;
+            }
         }
 
     } // namespace httpd

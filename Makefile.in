@@ -54,6 +54,8 @@ PROJECT_LINK_FLAGS		:= $(PROJECT_LINK_FLAGS)
 
 PROJECT_DEPENDS			:= \
 				/ppbox/mux \
+				/ppbox/vod \
+				/ppbox/peer \
 				/base/tinyxml \
 				$(PROJECT_DEPENDS)
 

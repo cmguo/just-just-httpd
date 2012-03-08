@@ -59,6 +59,9 @@ namespace ppbox
 #ifndef PPBOX_DISABLE_VOD
             ,bigmp4_(NULL)
 #endif
+#ifndef PPBOX_DISABLE_PEER
+            ,bigmp4_(NULL)
+#endif
             ,stream_(NULL)
             ,streambuf_(NULL)
             ,seek_(0)
@@ -86,7 +89,7 @@ namespace ppbox
             LOG_S(Logger::kLevelAlarm, "[open_for_play] session_id:"<<session_id_);
             boost::system::error_code ec;
 
-#ifdef PPBOX_DISABLE_VOD
+#if (defined(PPBOX_DISABLE_VOD) || defined(PPBOX_DISABLE_PEER))
             ec =ppbox::httpd::error::httpd_stream_end;
             resp(ec);
 #else
@@ -154,7 +157,7 @@ namespace ppbox
             ppbox::mux::session_callback_respone const &resp
             ,boost::system::error_code const & ec )
         {
-#ifndef PPBOX_DISABLE_VOD
+#if (!defined(PPBOX_DISABLE_VOD) && !defined(PPBOX_DISABLE_VOD))
             playing_ = false;
 
             LOG_S(Logger::kLevelAlarm, "[open_callback] session_id:"<<session_id_
@@ -189,7 +192,7 @@ namespace ppbox
         {
             LOG_S(Logger::kLevelAlarm, "[setup] session_id:"<<session_id);
             boost::system::error_code ec;
-#ifndef PPBOX_DISABLE_VOD
+#if (!defined(PPBOX_DISABLE_VOD) && !defined(PPBOX_DISABLE_VOD))
             assert(NULL != bigmp4_);
 
             if(NULL != stream_)
@@ -208,7 +211,7 @@ namespace ppbox
             boost::uint32_t session_id, 
             ppbox::mux::session_callback_respone const & resp)
         {
-#ifndef PPBOX_DISABLE_VOD
+#if (!defined(PPBOX_DISABLE_VOD) && !defined(PPBOX_DISABLE_VOD))
             playing_ = true;
 
             assert(NULL != bigmp4_);
@@ -282,7 +285,7 @@ namespace ppbox
         {
             LOG_S(Logger::kLevelAlarm, "[close] session_id:"<<session_id);
             boost::system::error_code ec;
-#ifndef PPBOX_DISABLE_VOD
+#if (!defined(PPBOX_DISABLE_VOD) && !defined(PPBOX_DISABLE_VOD))
             if (session_id_ == session_id && bigmp4_)
             {
                 bigmp4_->close();
@@ -293,7 +296,7 @@ namespace ppbox
 
         void Mp4HttpDispatcher::handle_timer( boost::system::error_code const & ec )
         {
-#ifndef PPBOX_DISABLE_VOD
+#if (!defined(PPBOX_DISABLE_VOD) && !defined(PPBOX_DISABLE_VOD))
 
             LOG_S(Logger::kLevelAlarm, "[handle_timer] session_id:"<<session_id_
                 <<" ec:"<<ec.message());
@@ -315,7 +318,7 @@ namespace ppbox
         boost::system::error_code Mp4HttpDispatcher::get_file_length(boost::uint32_t& len)
         {
             boost::system::error_code ec;
-#ifndef PPBOX_DISABLE_VOD
+#if (!defined(PPBOX_DISABLE_VOD) && !defined(PPBOX_DISABLE_VOD))
             ec = bigmp4_->get_total_size(len);
 #endif
             return ec;

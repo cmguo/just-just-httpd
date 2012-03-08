@@ -8,6 +8,10 @@
 #include <ppbox/vod/BigMp4.h>
 #endif
 
+#ifndef PPBOX_DISABLE_PEER
+#include <ppbox/peer/BigMp4.h>
+#endif
+
 #include <boost/asio/deadline_timer.hpp>
 namespace ppbox
 {
@@ -121,6 +125,9 @@ namespace ppbox
             ppbox::vod::BigMp4* bigmp4_;
 #endif
 
+#ifndef PPBOX_DISABLE_PEER 
+            ppbox::peer::BigMp4* bigmp4_;
+#endif
             std::stringstream stream_tmp_;
             std::ostream *stream_;
             MyStream *streambuf_;
