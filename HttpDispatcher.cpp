@@ -254,7 +254,7 @@ namespace ppbox
         void HttpDispatcher::set_host(std::string const & host)
         {
             assert(NULL != cur_mov_->muxer);
-            cur_mov_->muxer->Config().set("M3U8","full_path", host);
+            cur_mov_->muxer->config().set("M3U8","full_path", host);
         }
 
     } // namespace rtspd
