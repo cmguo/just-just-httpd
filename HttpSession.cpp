@@ -105,7 +105,7 @@ namespace ppbox
             head_ = request_url.param("head");
             if (!type.empty())
             {
-                type = type +  "://";
+                type = type +  ":///";
                 playlink = type + playlink;
             }
 
