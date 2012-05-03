@@ -200,7 +200,7 @@ namespace ppbox
                     element = node->ToElement();
 
                     TiXmlElement duration("duration");
-                    duration.SetAttribute("value", format(media_info.duration).c_str());
+                    duration.SetAttribute("value", format(media_info.duration_info.total).c_str());
 
                     TiXmlElement video("video");
                     video.SetAttribute("codec", "h264");
