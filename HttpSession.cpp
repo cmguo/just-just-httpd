@@ -235,7 +235,7 @@ namespace ppbox
             
             if (!body_.empty() || (option_ != "play" && option_ != "record"))
             {
-                std::cout<<body_<<std::endl;
+                // std::cout<<body_<<std::endl;
                 size_t tSize = body_.size();
                 ec_ = write(body_);
                 LOG_S(Logger::kLevelEvent, "[transfer_response_data] "<<option_);
