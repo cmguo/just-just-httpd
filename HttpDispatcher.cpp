@@ -42,38 +42,41 @@ namespace ppbox
         boost::system::error_code HttpDispatcher::open_mediainfo(
             boost::uint32_t& session_id,
             std::string const & play_link,
+            framework::string::Url const & params,
             std::string const & format,
             std::string & body,
             ppbox::mux::session_callback_respone const & resp)
         {
-            return Dispatcher::open(session_id,play_link,format,false,
+            return Dispatcher::open(session_id,play_link,params,format,false,
                 boost::bind(&HttpDispatcher::mediainfo_callback,this,boost::ref(body),resp,_1));
         }
 
         boost::system::error_code HttpDispatcher::open_playinfo(
             boost::uint32_t& session_id,
             std::string const & play_link,
+            framework::string::Url const & params,
             std::string const & format,
             std::string & body,
             ppbox::mux::session_callback_respone const & resp)
         {
-            return Dispatcher::open(session_id,play_link,format,false,
+            return Dispatcher::open(session_id,play_link,params,format,false,
                 boost::bind(&HttpDispatcher::playinfo_callback,this,boost::ref(body),resp,_1));
         }
 
         boost::system::error_code HttpDispatcher::open_for_play(
             boost::uint32_t& session_id,
             std::string const & play_link,
+            framework::string::Url const & params,
             std::string const & format,
             ppbox::mux::session_callback_respone const & resp)
         {
             if(format == "m3u8")
 			{
-				return Dispatcher::open(session_id,play_link,format,false,resp);
+				return Dispatcher::open(session_id,play_link,params,format,false,resp);
 			}
 			else
 			{
-				return Dispatcher::open(session_id,play_link,format,true,resp);
+				return Dispatcher::open(session_id,play_link,params,format,true,resp);
 			}
 		}
 

@@ -138,13 +138,13 @@ namespace ppbox
             if ("mediainfo" == option)
             {//open
                 get_response_head()["Content-Type"]="{application/xml}";
-                dispatcher_->open_mediainfo(session_id_,playlink,format,body_,
+                dispatcher_->open_mediainfo(session_id_,playlink,request_url,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("playinfo" == option)
             {//open
                 get_response_head()["Content-Type"]="{application/xml}";
-                dispatcher_->open_playinfo(session_id_,playlink,format,body_,
+                dispatcher_->open_playinfo(session_id_,playlink,request_url,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
             else if ("seek" == option)
@@ -172,6 +172,12 @@ namespace ppbox
             {
 
             }
+            else if ("close" == option)
+            {
+                std::cout<<"Http Close"<<std::endl;
+                dispatcher_->kill();
+                resp(ec,Size());
+            }
             else if("play" == option || "record" == option) 
             {
 
@@ -198,7 +204,7 @@ namespace ppbox
                     }
                     dispatcher_ = g_mp4Dispather;
                 }
-                dispatcher_->open_for_play(session_id_,playlink,format,
+                dispatcher_->open_for_play(session_id_,playlink,request_url,format,
                     boost::bind(&HttpSession::on_open,this,resp,_1));
             }
             else  
@@ -210,8 +216,7 @@ namespace ppbox
 
                     seek_ = atoi(option.c_str());
                     need_seek_ = true;
-
-                    dispatcher_->open_for_play(session_id_,"", "",
+                    dispatcher_->open_for_play(session_id_,"",request_url,"",
                         boost::bind(&HttpSession::on_open,this,resp,_1));
 
                 }

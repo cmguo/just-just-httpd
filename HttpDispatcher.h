@@ -41,6 +41,7 @@ namespace ppbox
             virtual boost::system::error_code open_mediainfo(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
+                framework::string::Url const & params,
                 std::string const & format,
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);
@@ -48,6 +49,7 @@ namespace ppbox
             virtual boost::system::error_code open_playinfo(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
+                framework::string::Url const & params,
                 std::string const & format,
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);
@@ -55,6 +57,7 @@ namespace ppbox
             virtual boost::system::error_code open_for_play(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
+                framework::string::Url const & params,
                 std::string const & format,
                 ppbox::mux::session_callback_respone const &);
 
