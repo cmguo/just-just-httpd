@@ -24,7 +24,7 @@ namespace ppbox
             ,dispatcher_(new HttpDispatcher(daemon))
         {
             config().register_module("HttpManager")
-                << CONFIG_PARAM_NAME_NOACC("addr", addr_);
+                << CONFIG_PARAM_NAME_RDWR("addr", addr_);
         }
 
         HttpManager::~HttpManager()

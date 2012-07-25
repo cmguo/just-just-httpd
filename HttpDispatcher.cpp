@@ -71,14 +71,14 @@ namespace ppbox
             ppbox::mux::session_callback_respone const & resp)
         {
             if(format == "m3u8")
-			{
-				return Dispatcher::open(session_id,play_link,params,format,false,resp);
-			}
-			else
-			{
-				return Dispatcher::open(session_id,play_link,params,format,true,resp);
-			}
-		}
+            {
+                return Dispatcher::open(session_id,play_link,params,format,false,resp);
+            }
+            else
+            {
+                return Dispatcher::open(session_id,play_link,params,format,true,resp);
+            }
+        }
 
         boost::system::error_code HttpDispatcher::get_file_length(boost::uint32_t& len)
         {
@@ -99,8 +99,8 @@ namespace ppbox
             ppbox::mux::session_callback_respone const & resp)
         {
             ppbox::mux::Sink* sink = NULL;
-            
-			if (bChunked)
+
+            if (bChunked)
             {
                 sink = new HttpChunkedSink(sock);
             }
@@ -117,6 +117,13 @@ namespace ppbox
             ppbox::mux::session_callback_respone const & resp)
         {
             return Dispatcher::play(session_id,resp);
+        }
+
+        boost::system::error_code HttpDispatcher::record(
+            boost::uint32_t session_id, 
+            ppbox::mux::session_callback_respone const & resp)
+        {
+            return Dispatcher::record(session_id,resp);
         }
 
         boost::system::error_code HttpDispatcher::seek(

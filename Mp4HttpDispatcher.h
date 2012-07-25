@@ -1,4 +1,4 @@
-// RtpDispatcher.h
+// Mp4HttpDispatcher.h
 
 #ifndef _PPBOX_MP4_HTTPD_DISPATCHER_H_
 #define _PPBOX_MP4_HTTPD_DISPATCHER_H_
@@ -32,7 +32,7 @@ namespace ppbox
         private:
             util::protocol::HttpSocket& sock_;
         };
-        
+
         class Mp4HttpDispatcher 
             : public HttpDispatcher
         {
@@ -46,6 +46,7 @@ namespace ppbox
             boost::system::error_code open_mediainfo(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
+                framework::string::Url const & params,
                 std::string const & format,
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);
@@ -60,6 +61,7 @@ namespace ppbox
             boost::system::error_code open_for_play(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
+                framework::string::Url const & params,
                 std::string const & format,
                 ppbox::mux::session_callback_respone const &);
 
@@ -70,6 +72,10 @@ namespace ppbox
                 ppbox::mux::session_callback_respone const & resp);
 
             virtual boost::system::error_code play(
+                boost::uint32_t session_id, 
+                ppbox::mux::session_callback_respone const & resp);
+
+            boost::system::error_code record(
                 boost::uint32_t session_id, 
                 ppbox::mux::session_callback_respone const & resp);
 
@@ -86,6 +92,13 @@ namespace ppbox
 
             std::string parse_url(std::string const &url,boost::system::error_code& ec);
         private:
+            boost::system::error_code open(
+                boost::uint32_t & session_id,
+                std::string const & play_link,
+                framework::string::Url const & params,
+                std::string const & format,
+                ppbox::mux::session_callback_respone const &);
+
             void handle_timer( boost::system::error_code const & ec );
 
             void open_callback( 
@@ -103,15 +116,18 @@ namespace ppbox
                 OpenList(
                     boost::uint32_t& a
                     ,std::string const & b
-                    ,std::string const & c
-                    ,ppbox::mux::session_callback_respone const & d)
+                    ,framework::string::Url const& c
+                    ,std::string const & d
+                    ,ppbox::mux::session_callback_respone const & e)
                     :session_id(a)
                     ,play_link(b)
-                    ,format(c)
-                    ,resp(d){}
+                    ,params(c)
+                    ,format(d)
+                    ,resp(e){}
 
                 boost::uint32_t session_id;
                 std::string play_link;
+                framework::string::Url params;
                 std::string format;
                 ppbox::mux::session_callback_respone resp;
             };
@@ -140,7 +156,7 @@ namespace ppbox
             bool playing_;
         };
 
-    } // namespace rtspd
+    } // namespace httpd
 } // namespace ppbox
 
-#endif // _PPBOX_RTSP_RTP_DISPATCHER_H_
+#endif // _PPBOX_HTTPD_MP4_HTTP_DISPATCHER_H_

@@ -1,4 +1,4 @@
-// RtpDispatcher.h
+// HttpDispatcher.h
 
 #ifndef _PPBOX_HTTPD_DISPATCHER_H_
 #define _PPBOX_HTTPD_DISPATCHER_H_
@@ -27,7 +27,7 @@ namespace ppbox
 
     namespace httpd
     {  
-        
+
         class HttpDispatcher 
             : public ppbox::mux::Dispatcher
         {
@@ -71,17 +71,21 @@ namespace ppbox
                 boost::uint32_t session_id, 
                 ppbox::mux::session_callback_respone const & resp);
 
+            virtual boost::system::error_code record(
+                boost::uint32_t session_id, 
+                ppbox::mux::session_callback_respone const & resp);
+
             virtual boost::system::error_code seek(
-                const boost::uint32_t session_id
-                ,const boost::uint32_t begin
-                ,const boost::uint32_t end
-                ,ppbox::mux::session_callback_respone const &);
+                const boost::uint32_t session_id,
+                const boost::uint32_t begin,
+                const boost::uint32_t end,
+                ppbox::mux::session_callback_respone const &);
 
             virtual boost::system::error_code close(
                 const boost::uint32_t session_id);
 
             void set_host(std::string const & host);
-        
+
             virtual boost::system::error_code get_file_length(boost::uint32_t& len);
 
         private:
@@ -89,7 +93,7 @@ namespace ppbox
                 std::string& rtp_info,
                 ppbox::mux::session_callback_respone const &resp,
                 boost::system::error_code ec);
-            
+
             void playinfo_callback(
                 std::string& rtp_info,
                 ppbox::mux::session_callback_respone const &resp,
@@ -104,7 +108,7 @@ namespace ppbox
 
         };
 
-    } // namespace rtspd
+    } // namespace httpd
 } // namespace ppbox
 
-#endif // _PPBOX_RTSP_RTP_DISPATCHER_H_
+#endif // _PPBOX_HTTPD_HTTP_DISPATCHER_H_

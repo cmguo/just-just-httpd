@@ -50,7 +50,7 @@ namespace ppbox
             : HttpProxy(mgr.io_svc())
             ,io_svc_(mgr.io_svc())
             ,len_(0)
-			,session_id_(0)
+            ,session_id_(0)
             ,seek_(0)
             ,need_seek_(false)
         {
@@ -77,6 +77,8 @@ namespace ppbox
             framework::string::Url url(tmphost + get_request_head().path);
             std::string url_path(url.path_all());
 
+            static HttpDispatcher* g_mp4Dispather = NULL; 
+            
             std::string option;
             std::string playlink;
             std::string type;
@@ -90,6 +92,9 @@ namespace ppbox
             //防止一些播放器不支持 playlink带参数的方式
             if (url_path.compare(1, url_profix.size(), url_profix) == 0) {
                 url_path = url_path.substr(url_profix.size()+1, url_path.size() - url_profix.size()+1);
+                std::vector<std::string> parm;
+                slice<std::string>(url_path, std::inserter(parm, parm.end()), ".");
+                url_path = parm[0];
                 url_path = Base64::decode(url_path);
                 url_path = std::string("/") + url_path;
             }
@@ -138,6 +143,11 @@ namespace ppbox
             if ("mediainfo" == option)
             {//open
                 get_response_head()["Content-Type"]="{application/xml}";
+                if(format == "mp4")
+                {
+                    if(NULL == g_mp4Dispather) g_mp4Dispather =  new Mp4HttpDispatcher(global_daemon());
+                    dispatcher_ = g_mp4Dispather;
+                }
                 dispatcher_->open_mediainfo(session_id_,playlink,request_url,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
             }
@@ -193,7 +203,6 @@ namespace ppbox
 
                 if(g_format_ == "mp4")
                 {
-                    static HttpDispatcher* g_mp4Dispather = NULL;
                     if(NULL == g_mp4Dispather) g_mp4Dispather =  new Mp4HttpDispatcher(global_daemon());
 
                     if(request().head().range.is_initialized())
@@ -237,7 +246,7 @@ namespace ppbox
             std::string response_str;
             LOG_S(Logger::kLevelEvent, "[transfer_response_data] ");
 
-            
+
             if (!body_.empty() || (option_ != "play" && option_ != "record"))
             {
                 // std::cout<<body_<<std::endl;
@@ -264,7 +273,7 @@ namespace ppbox
                 }
                 return;
             }
-           
+
 
         }
 
@@ -307,12 +316,21 @@ namespace ppbox
                     dispatcher_->setup(session_id_,get_client_data_stream(),true,
                         io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
 #else
+                    get_response_head()["Accept-Ranges"]="{bytes}";
                     dispatcher_->get_file_length(len_);
                     LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
                     if (need_seek_)
                     {
                         if(seek_ > 0 && g_format_ == "mp4")
                         {
+                            std::string strformat("bytes ");
+                            strformat += format(seek_);
+                            strformat += "-";
+                            strformat += format(len_-1);
+                            strformat += "/";
+                            strformat += format(len_);
+                            get_response_head()["Content-Range"]="{"+strformat+"}";
+
                             len_ -= seek_;
                             get_response().head().err_code = 206;
                             get_response().head().err_msg = "Partial Content";
@@ -364,10 +382,10 @@ namespace ppbox
                     LOG_S(Logger::kLevelError, "[open_setupup] format_:"<<format_);
                 }
 
-				if(len_ > 0)
+                if(len_ > 0)
                     resp(ec, (size_t)len_);
-				else
-					resp(ec,Size());
+                else
+                    resp(ec,Size());
             }
         }
 
@@ -394,7 +412,7 @@ namespace ppbox
             boost::system::error_code const & ec)
         {
             LOG_S(Logger::kLevelEvent,"[on_seekend] ec:"<<ec.message());
-            if (ec)
+            if (ec || (0 == session_id_))
             {
                 resp(ec,std::pair<std::size_t, std::size_t>(0,0));
             }
@@ -430,7 +448,7 @@ namespace ppbox
             std::string& respone_str, 
             boost::system::error_code const & last_error)
         {
-            
+
             get_response().head().err_code = 500;
             get_response().head().err_msg = "Internal Server Error";
             get_response_head()["Content-Type"]="{application/xml}";
@@ -452,11 +470,12 @@ namespace ppbox
 
         void HttpSession::Close()
         {
+            LOG_S(Logger::kLevelEvent, "[Close] session_id:"<<session_id_);
             if(session_id_)
             {
                 if (g_format_ == "m3u8" && "ts" == format_)
                 {
-                    LOG_S(Logger::kLevelEvent, "[Close] m3u8/ts not close session_id:"<<session_id_);
+                    LOG_S(Logger::kLevelEvent, "[Close] m3u8/ts not close ");
                 }
                 else
                 {
