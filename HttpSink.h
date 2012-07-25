@@ -25,9 +25,10 @@ namespace ppbox
             virtual ~HttpSink();
 
         private:
-            virtual boost::system::error_code write(
+            virtual size_t write(
                 boost::posix_time::ptime const & time_send, 
-                ppbox::demux::Sample&);
+                ppbox::demux::Sample&,
+                boost::system::error_code& ec);
 
         private:
             util::protocol::HttpSocket& socket_;

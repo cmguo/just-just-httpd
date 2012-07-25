@@ -44,6 +44,7 @@ namespace ppbox
 
         std::string HttpSession::g_format_;
         bool HttpSession::g_record_ = false;
+        bool HttpSession::g_chunked = false;
 
         HttpSession::HttpSession(
             HttpManager & mgr)
@@ -78,7 +79,7 @@ namespace ppbox
             std::string url_path(url.path_all());
 
             static HttpDispatcher* g_mp4Dispather = NULL; 
-            
+
             std::string option;
             std::string playlink;
             std::string type;
@@ -106,8 +107,23 @@ namespace ppbox
             //request_url.decode();
 
             playlink = request_url.param("playlink");
-            type = request_url.param("type");
+            if(!playlink.empty())
+            {
+                //为m3u8方式做特殊处理
+                std::string chunk = request_url.param("chunked");
+                if (chunk.empty() || chunk != "true")
+                {
+                    g_chunked = false;
+                }
+                else
+                {
+                    g_chunked = true;
+                }
+            }
+
             head_ = request_url.param("head");
+
+            type = request_url.param("type");
             if (!type.empty())
             {
                 type = type +  ":///";
@@ -307,39 +323,43 @@ namespace ppbox
                     {
                         body_ = *(std::string*)infoTemp.attachment;
                     }
-                } else 
+                } 
+                else 
                 {
                     //确定用什么sink Connection: keep-alive
-#ifdef PPBOX_HTTP_CHUNKED
-                    get_response_head()["Transfer-Encoding"]="{chunked}";
-                    get_response_head()["Connection"] = "Keep-Alive";
-                    dispatcher_->setup(session_id_,get_client_data_stream(),true,
-                        io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
-#else
-                    get_response_head()["Accept-Ranges"]="{bytes}";
-                    dispatcher_->get_file_length(len_);
-                    LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
-                    if (need_seek_)
+                    if (g_chunked)
                     {
-                        if(seek_ > 0 && g_format_ == "mp4")
-                        {
-                            std::string strformat("bytes ");
-                            strformat += format(seek_);
-                            strformat += "-";
-                            strformat += format(len_-1);
-                            strformat += "/";
-                            strformat += format(len_);
-                            get_response_head()["Content-Range"]="{"+strformat+"}";
-
-                            len_ -= seek_;
-                            get_response().head().err_code = 206;
-                            get_response().head().err_msg = "Partial Content";
-                        }
+                        get_response_head()["Transfer-Encoding"]="{chunked}";
+                        get_response_head()["Connection"] = "Keep-Alive";
+                        dispatcher_->setup(session_id_,get_client_data_stream(),true,
+                            io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
                     }
+                    else
+                    {
+                        get_response_head()["Accept-Ranges"]="{bytes}";
+                        dispatcher_->get_file_length(len_);
+                        LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
+                        if (need_seek_)
+                        {
+                            if(seek_ > 0 && g_format_ == "mp4")
+                            {
+                                std::string strformat("bytes ");
+                                strformat += format(seek_);
+                                strformat += "-";
+                                strformat += format(len_-1);
+                                strformat += "/";
+                                strformat += format(len_);
+                                get_response_head()["Content-Range"]="{"+strformat+"}";
 
-                    dispatcher_->setup(session_id_,get_client_data_stream(),false,
-                        io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
-#endif
+                                len_ -= seek_;
+                                get_response().head().err_code = 206;
+                                get_response().head().err_msg = "Partial Content";
+                            }
+                        }
+
+                        dispatcher_->setup(session_id_,get_client_data_stream(),false,
+                            io_svc_.wrap(boost::bind(&HttpSession::open_setupup,this,resp,_1)));
+                    }
                     return;
                 }
             }
@@ -473,7 +493,7 @@ namespace ppbox
             LOG_S(Logger::kLevelEvent, "[Close] session_id:"<<session_id_);
             if(session_id_)
             {
-                if (g_format_ == "m3u8" && "ts" == format_)
+                if (g_format_ == "m3u8" && ("ts" == format_ || "m3u8" == format_))
                 {
                     LOG_S(Logger::kLevelEvent, "[Close] m3u8/ts not close ");
                 }

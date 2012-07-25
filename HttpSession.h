@@ -71,7 +71,7 @@ namespace ppbox
         private:
             static std::string g_format_;  //保存上一次的format
             static bool g_record_; //记录play还是recoder
-
+            static bool g_chunked;  //保存上一次的format
         private:
             boost::asio::io_service & io_svc_;
             std::string option_;  //transfer_response_data判断上次处理的什么消息

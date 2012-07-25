@@ -143,28 +143,47 @@ namespace ppbox
 #endif
 #ifndef PPBOX_DISABLE_PEER
                         bigmp4_ = new ppbox::peer::BigMp4(io_svc_);
-#endif					
+#endif
                     }
-					stream_tmp_.seekg(0, std::ios_base::beg);
-                    std::string newurl(play_link);
+                    stream_tmp_.seekg(0, std::ios_base::beg);
                     playlink_ = play_link;
-                    newurl = newurl.substr(std::string("ppvod://").size());
                     playing_ = true;
-                    bigmp4_->async_open(
-                        newurl
+                    framework::string::Url url(play_link);
+                    std::string mode = "false";
+                    mode = url.param("bighead");
+                    if (mode =="true")
+                    {
+                        bigmp4_->async_open(
+                            play_link
 #ifndef PPBOX_DISABLE_VOD
-                        ,ppbox::vod::BigMp4::FetchMode::small_head
+                            ,ppbox::vod::BigMp4::FetchMode::big_head
 #endif
 #ifndef PPBOX_DISABLE_PEER
-                        ,ppbox::peer::BigMp4::FetchMode::small_head
+                            ,ppbox::peer::BigMp4::FetchMode::big_head
 #endif
-                        ,stream_tmp_
-                        ,boost::bind(&Mp4HttpDispatcher::open_callback
-                        ,this
-                        ,resp,_1));
+                            ,stream_tmp_
+                            ,boost::bind(&Mp4HttpDispatcher::open_callback
+                            ,this
+                            ,resp,_1));
+                    }
+                    else
+                    {
+                        bigmp4_->async_open(
+                            play_link
+#ifndef PPBOX_DISABLE_VOD
+                            ,ppbox::vod::BigMp4::FetchMode::small_head
+#endif
+#ifndef PPBOX_DISABLE_PEER
+                            ,ppbox::peer::BigMp4::FetchMode::small_head
+#endif
+                            ,stream_tmp_
+                            ,boost::bind(&Mp4HttpDispatcher::open_callback
+                            ,this
+                            ,resp,_1));
+                    }
                 }
             }
-#endif			
+#endif
             return ec;
         }
 

@@ -24,18 +24,16 @@ namespace ppbox
         }
 
         //工作线程调用
-        boost::system::error_code HttpSink::write(
+        size_t HttpSink::write(
             boost::posix_time::ptime const & time_send, 
-            ppbox::demux::Sample& tag)
+            ppbox::demux::Sample& tag,
+            boost::system::error_code& ec)
         {
-
-            boost::system::error_code ec;
-            boost::asio::write(
+            return boost::asio::write(
                 socket_, 
                 tag.data, 
                 boost::asio::transfer_all(), 
                 ec);
-            return ec;
         }
 
     } // namespace httpd

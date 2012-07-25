@@ -7,18 +7,17 @@
 
 #include <ppbox/mux/Muxer.h>
 
-
-
-#include <tinyxml/tinyxml.h>
-
 #include <framework/system/LogicError.h>
 #include <framework/logger/LoggerStreamRecord.h>
 using namespace framework::logger;
+using namespace framework::string;
 using namespace framework::system::logic_error;
 
 #include <boost/bind.hpp>
 #include <boost/thread/thread.hpp>
 using namespace boost::system;
+
+#include <tinyxml/tinyxml.h>
 
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpDispatcher", 0)
 
@@ -99,7 +98,10 @@ namespace ppbox
             ppbox::mux::session_callback_respone const & resp)
         {
             ppbox::mux::Sink* sink = NULL;
-
+            boost::system::error_code ec;
+            ec = sock.set_non_block(true,ec);
+            if(ec)
+                return ec;
             if (bChunked)
             {
                 sink = new HttpChunkedSink(sock);
