@@ -7,6 +7,8 @@
 
 #include <ppbox/mux/Muxer.h>
 
+#include <util/protocol/http/HttpSocket.h>
+
 #include <framework/system/LogicError.h>
 #include <framework/logger/LoggerStreamRecord.h>
 using namespace framework::logger;

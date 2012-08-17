@@ -4,13 +4,8 @@
 #define _PPBOX_MP4_HTTPD_DISPATCHER_H_
 
 #include "ppbox/httpd/HttpDispatcher.h"
-#ifndef PPBOX_DISABLE_VOD 
-#include <ppbox/vod/BigMp4.h>
-#endif
 
-#ifndef PPBOX_DISABLE_PEER
-#include <ppbox/peer/BigMp4.h>
-#endif
+#include <ppbox/segment/BigMp4.h>
 
 #include <boost/asio/deadline_timer.hpp>
 namespace ppbox
