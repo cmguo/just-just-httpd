@@ -12,7 +12,7 @@
 #include <util/protocol/pptv/Url.h>
 
 #include <framework/string/StringToken.h>
-
+#include <framework/string/Format.h>
 #include <framework/logger/LoggerStreamRecord.h>
 using namespace framework::logger;
 
@@ -406,15 +406,86 @@ namespace ppbox
             return open_for_play(session_id,play_link,params,format,resp);
         }
 
+
         boost::system::error_code Mp4HttpDispatcher::open_playinfo(
             boost::uint32_t& session_id,
             std::string const & play_link,
+            framework::string::Url const & params,
             std::string const & format,
             std::string & body,
-            ppbox::mux::session_callback_respone const & resp)
+            ppbox::mux::session_callback_respone const &resp)
         {
             boost::system::error_code ec;
-            assert(0);
+#if (!defined(PPBOX_DISABLE_VOD) || !defined(PPBOX_DISABLE_PEER))
+#ifndef PPBOX_DISABLE_VOD
+            ppbox::vod::BigMp4Info info;
+#else
+            ppbox::peer::BigMp4Info info;
+#endif
+            if (bigmp4_) {
+                ec = bigmp4_->get_info_statictis(info);
+                if(!ec)
+                {
+                    TiXmlDocument doc;
+                    const char* strXMLContent =
+                        "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                        "<template module=\"playinfo\" version=\"1.0\">"
+                        "</template>";
+
+                    doc.Parse( strXMLContent );
+                    if ( !doc.Error() )
+                    {
+                        TiXmlNode* node = 0;
+                        TiXmlElement* element = 0;
+                        node = doc.FirstChild( "template");
+                        element = node->ToElement();
+
+                        TiXmlElement file("file");
+                        TiXmlElement headsize("headsize");
+                        TiXmlText file_headsize(framework::string::format(info.head_size).c_str());
+                        headsize.InsertEndChild(file_headsize);
+                        TiXmlElement bodysize("bodysize");
+                        TiXmlText file_bodysize(framework::string::format(info.body_size).c_str());
+                        bodysize.InsertEndChild(file_bodysize);
+                        TiXmlElement tailsize("tailsize");
+                        TiXmlText file_tailsize(framework::string::format(info.tail_size).c_str());
+                        tailsize.InsertEndChild(file_tailsize);
+                        file.InsertEndChild(headsize);
+                        file.InsertEndChild(bodysize);
+                        file.InsertEndChild(tailsize);
+
+                        TiXmlElement download("download");
+                        TiXmlElement offset("offset");
+                        TiXmlText d_offset(framework::string::format(info.cur_offset).c_str());
+                        offset.InsertEndChild(d_offset);
+                        TiXmlElement speed("speed");
+                        TiXmlText d_speed(framework::string::format(info.speed).c_str());
+                        speed.InsertEndChild(d_speed);
+                        TiXmlElement area("area");
+                        TiXmlText d_area(framework::string::format(info.area).c_str());
+                        area.InsertEndChild(d_area);
+                        TiXmlElement percent("percent");
+                        TiXmlText d_percent(framework::string::format(info.percent).c_str());
+                        percent.InsertEndChild(d_percent);
+
+                        download.InsertEndChild(offset);
+                        download.InsertEndChild(speed);
+                        download.InsertEndChild(area);
+                        download.InsertEndChild(percent);
+
+                        element->InsertEndChild(file);
+                        element->InsertEndChild(download);
+                    }
+
+                    TiXmlPrinter printer;
+                    printer.SetStreamPrinting();
+                    doc.Accept( &printer );
+                    body = printer.CStr();
+                }
+            }
+#else
+            ec =ppbox::httpd::error::httpd_stream_end;
+#endif
             resp(ec);
             return boost::system::error_code();
         }

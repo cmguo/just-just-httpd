@@ -46,9 +46,10 @@ namespace ppbox
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);
 
-            boost::system::error_code open_playinfo(
+            virtual boost::system::error_code open_playinfo(
                 boost::uint32_t& session_id,
                 std::string const & play_link,
+                framework::string::Url const & params,
                 std::string const & format,
                 std::string & body,
                 ppbox::mux::session_callback_respone const &);

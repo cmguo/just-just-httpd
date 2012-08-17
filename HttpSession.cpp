@@ -169,6 +169,11 @@ namespace ppbox
             }
             else if ("playinfo" == option)
             {//open
+                if(format == "mp4")
+                {
+                    if(NULL == g_mp4Dispather) g_mp4Dispather =  new Mp4HttpDispatcher(global_daemon());
+                    dispatcher_ = g_mp4Dispather;
+                }
                 get_response_head()["Content-Type"]="{application/xml}";
                 dispatcher_->open_playinfo(session_id_,playlink,request_url,format,body_,
                     boost::bind(&HttpSession::on_common,this,resp,_1));
