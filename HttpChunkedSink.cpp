@@ -7,7 +7,7 @@
 
 #include <util/protocol/http/HttpSocket.h>
 
-#include <framework/logger/LoggerStreamRecord.h>
+#include <framework/logger/StreamRecord.h>
 using namespace framework::logger;
 
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpChunkedSink", 0)
@@ -32,7 +32,7 @@ namespace ppbox
         {
             boost::system::error_code ec1;
             socket_.send(util::protocol::HttpChunkedSocket<util::protocol::HttpSocket>::eof(),0,ec1);
-            LOG_S(Logger::kLevelEvent, "[on_finish] ec:"<<ec1.message());
+            LOG_INFO("[on_finish] ec:"<<ec1.message());
             return ec1;
         }
 

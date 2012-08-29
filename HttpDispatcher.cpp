@@ -10,7 +10,7 @@
 #include <util/protocol/http/HttpSocket.h>
 
 #include <framework/system/LogicError.h>
-#include <framework/logger/LoggerStreamRecord.h>
+#include <framework/logger/StreamRecord.h>
 using namespace framework::logger;
 using namespace framework::string;
 using namespace framework::system::logic_error;

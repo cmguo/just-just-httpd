@@ -19,7 +19,7 @@ using namespace util::protocol;
 
 #include <framework/string/Url.h>
 #include <framework/string/Base64.h>
-#include <framework/logger/LoggerStreamRecord.h>
+#include <framework/logger/StreamRecord.h>
 using namespace framework::network;
 using namespace framework::string;
 using namespace framework::logger;
@@ -70,7 +70,7 @@ namespace ppbox
 
         void HttpSession::local_process(response_type const & resp)
         {
-            //LOG_S(Logger::kLevelEvent, "[local_process]");
+            //LOG_INFO("[local_process]");
 
             get_request_head().get_content(std::cout);
             error_code ec;
@@ -153,7 +153,7 @@ namespace ppbox
             option_ = option;
             format_ = format;
 
-            LOG_S(Logger::kLevelEvent, "[local_process] option :"<<option<<" format:"<<format_<<" this:"<<this);
+            LOG_INFO("[local_process] option :"<<option<<" format:"<<format_<<" this:"<<this);
 
 
             if ("mediainfo" == option)
@@ -265,7 +265,7 @@ namespace ppbox
             //mediainfo  m3u8  xml
             //play seek  Play  
             std::string response_str;
-            LOG_S(Logger::kLevelEvent, "[transfer_response_data] ");
+            LOG_INFO("[transfer_response_data] ");
 
 
             if (!body_.empty() || (option_ != "play" && option_ != "record"))
@@ -273,7 +273,7 @@ namespace ppbox
                 // std::cout<<body_<<std::endl;
                 size_t tSize = body_.size();
                 ec_ = write(body_);
-                LOG_S(Logger::kLevelEvent, "[transfer_response_data] "<<option_);
+                LOG_INFO("[transfer_response_data] "<<option_);
                 body_.clear();
                 resp(ec_,tSize);
             }
@@ -300,13 +300,13 @@ namespace ppbox
 
         void HttpSession::on_finish()
         {
-            LOG_S(Logger::kLevelEvent, "[on_finish] sessiin_id:"<<session_id_);
+            LOG_INFO("[on_finish] sessiin_id:"<<session_id_);
             HttpSession::Close();
         }
         void HttpSession::on_error(
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelDebug, "[on_error] sessiin_id:"<<session_id_<<" ec:" << ec.message());
+            LOG_DEBUG("[on_error] sessiin_id:"<<session_id_<<" ec:" << ec.message());
             HttpSession::Close();
         }
 
@@ -343,7 +343,7 @@ namespace ppbox
                     {
                         get_response_head()["Accept-Ranges"]="{bytes}";
                         dispatcher_->get_file_length(len_);
-                        LOG_S(Logger::kLevelEvent, "[on_open] Len:"<<len_);
+                        LOG_INFO("[on_open] Len:"<<len_);
                         if (need_seek_)
                         {
                             if(seek_ > 0 && g_format_ == "mp4")
@@ -380,7 +380,7 @@ namespace ppbox
         void HttpSession::open_setupup(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[open_setupup] ec:"<<ec.message());
+            LOG_INFO("[open_setupup] ec:"<<ec.message());
             ec_ = ec;
             if (ec)
             {
@@ -404,7 +404,7 @@ namespace ppbox
                 }
                 else
                 {
-                    LOG_S(Logger::kLevelError, "[open_setupup] format_:"<<format_);
+                    LOG_ERROR("[open_setupup] format_:"<<format_);
                 }
 
                 if(len_ > 0)
@@ -417,7 +417,7 @@ namespace ppbox
         void HttpSession::on_common(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[on_common] ec:"<<ec.message());
+            LOG_INFO("[on_common] ec:"<<ec.message());
             ec_ = ec;
             if (ec)
             {
@@ -429,14 +429,14 @@ namespace ppbox
         void HttpSession::on_playend(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent, "[on_playend] ec:"<<ec.message());
+            LOG_INFO("[on_playend] ec:"<<ec.message());
             resp(ec,std::pair<std::size_t, std::size_t>(0,0));
         }
 
         void HttpSession::on_seekend(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            LOG_S(Logger::kLevelEvent,"[on_seekend] ec:"<<ec.message());
+            LOG_INFO("[on_seekend] ec:"<<ec.message());
             if (ec || (0 == session_id_))
             {
                 resp(ec,std::pair<std::size_t, std::size_t>(0,0));
@@ -465,7 +465,7 @@ namespace ppbox
                 boost::asio::transfer_all(), 
                 ec);
 
-            LOG_S(Logger::kLevelDebug, "[write] msg size:"<<msg.size()<<" ec:"<<ec.message());
+            LOG_DEBUG("[write] msg size:"<<msg.size()<<" ec:"<<ec.message());
             return ec;
         }
 
@@ -495,12 +495,12 @@ namespace ppbox
 
         void HttpSession::Close()
         {
-            LOG_S(Logger::kLevelEvent, "[Close] session_id:"<<session_id_);
+            LOG_INFO("[Close] session_id:"<<session_id_);
             if(session_id_)
             {
                 if (g_format_ == "m3u8" && ("ts" == format_ || "m3u8" == format_))
                 {
-                    LOG_S(Logger::kLevelEvent, "[Close] m3u8/ts not close ");
+                    LOG_INFO("[Close] m3u8/ts not close ");
                 }
                 else
                 {

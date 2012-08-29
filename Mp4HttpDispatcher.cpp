@@ -13,7 +13,7 @@
 
 #include <framework/string/StringToken.h>
 #include <framework/string/Format.h>
-#include <framework/logger/LoggerStreamRecord.h>
+#include <framework/logger/StreamRecord.h>
 using namespace framework::logger;
 
 #include <util/protocol/http/HttpClient.h>
@@ -46,7 +46,7 @@ namespace ppbox
                 ec);
             if (ec)
             {
-                LOG_S(Logger::kLevelAlarm, "[xsputn] ec:"<<ec.message());
+                LOG_WARN("[xsputn] ec:"<<ec.message());
                 return 0;
             }
             return _Count;
@@ -108,7 +108,7 @@ namespace ppbox
         {
             boost::system::error_code ec;
 
-            LOG_S(Logger::kLevelAlarm, "[open] session_id:"<<session_id);
+            LOG_WARN("[open] session_id:"<<session_id);
 #if (!defined(PPBOX_DISABLE_VOD) || !defined(PPBOX_DISABLE_PEER))
             if (playing_)
             {
@@ -194,7 +194,7 @@ namespace ppbox
 #if (!defined(PPBOX_DISABLE_VOD) || !defined(PPBOX_DISABLE_PEER))
             playing_ = false;
 
-            LOG_S(Logger::kLevelAlarm, "[open_callback] session_id:"<<session_id_
+            LOG_WARN("[open_callback] session_id:"<<session_id_
                 <<" ec:"<<ec.message());
             assert(NULL != bigmp4_);
 
@@ -224,7 +224,7 @@ namespace ppbox
             bool bChunked,
             ppbox::mux::session_callback_respone const & resp)
         {
-            LOG_S(Logger::kLevelAlarm, "[setup] session_id:"<<session_id);
+            LOG_WARN("[setup] session_id:"<<session_id);
             boost::system::error_code ec;
 #if (!defined(PPBOX_DISABLE_VOD) || !defined(PPBOX_DISABLE_PEER))
             assert(NULL != bigmp4_);
@@ -250,7 +250,7 @@ namespace ppbox
 
             assert(NULL != bigmp4_);
 
-            LOG_S(Logger::kLevelAlarm, "[play] session_id:"<<session_id);
+            LOG_WARN("[play] session_id:"<<session_id);
             bigmp4_->async_tranfer(
                 seek_
                 ,*stream_
@@ -270,7 +270,7 @@ namespace ppbox
 
             assert(NULL != bigmp4_);
 
-            LOG_S(Logger::kLevelAlarm, "[record] session_id:"<<session_id);
+            LOG_WARN("[record] session_id:"<<session_id);
             bigmp4_->async_tranfer(
                 seek_
                 ,*stream_
@@ -302,7 +302,7 @@ namespace ppbox
             ppbox::mux::session_callback_respone const &resp
             ,boost::system::error_code const & ec )
         {
-            LOG_S(Logger::kLevelAlarm, "[tranfer_callback] session_id:"<<session_id_
+            LOG_WARN("[tranfer_callback] session_id:"<<session_id_
                 <<" ec:"<<ec.message());
             playing_ = false;
             resp(ec);
@@ -327,7 +327,7 @@ namespace ppbox
             ,const boost::uint32_t end
             ,ppbox::mux::session_callback_respone const &resp)
         {
-            LOG_S(Logger::kLevelAlarm, "[seek] session_id:"<<session_id);
+            LOG_WARN("[seek] session_id:"<<session_id);
             boost::system::error_code ec;
             seek_ = begin;
             resp(ec);
@@ -337,7 +337,7 @@ namespace ppbox
         boost::system::error_code Mp4HttpDispatcher::close(
             const boost::uint32_t session_id)
         {
-            LOG_S(Logger::kLevelAlarm, "[close] session_id:"<<session_id);
+            LOG_WARN("[close] session_id:"<<session_id);
             boost::system::error_code ec;
 #if (!defined(PPBOX_DISABLE_VOD) || !defined(PPBOX_DISABLE_PEER))
             if (session_id_ == session_id && bigmp4_)
@@ -362,7 +362,7 @@ namespace ppbox
         {
 #if (!defined(PPBOX_DISABLE_VOD) || !defined(PPBOX_DISABLE_PEER))
 
-            LOG_S(Logger::kLevelAlarm, "[handle_timer] session_id:"<<session_id_
+            LOG_WARN("[handle_timer] session_id:"<<session_id_
                 <<" ec:"<<ec.message());
 
             if (ec)
@@ -501,7 +501,7 @@ namespace ppbox
             //cert.certify_url(ppbox::certify::CertifyType::vod,"",key,ec);
             if (ec)
             {
-                LOG_S(framework::logger::Logger::kLevelError,"[parse_url] ec:"<<ec.message());
+                LOG_ERROR("[parse_url] ec:"<<ec.message());
                 return newUrl;
             }
 #endif
