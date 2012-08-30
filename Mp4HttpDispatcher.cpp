@@ -467,11 +467,15 @@ namespace ppbox
                         TiXmlElement percent("percent");
                         TiXmlText d_percent(framework::string::format(info.percent).c_str());
                         percent.InsertEndChild(d_percent);
+                        TiXmlElement headpercent("headpercent");
+                        TiXmlText head_percent(framework::string::format(info.headpercent).c_str());
+                        headpercent.InsertEndChild(head_percent);
 
                         download.InsertEndChild(offset);
                         download.InsertEndChild(speed);
                         download.InsertEndChild(area);
                         download.InsertEndChild(percent);
+                        download.InsertEndChild(headpercent);
 
                         element->InsertEndChild(file);
                         element->InsertEndChild(download);

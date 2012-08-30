@@ -103,7 +103,11 @@ namespace ppbox
             boost::system::error_code ec;
             ec = sock.set_non_block(true,ec);
             if(ec)
+            {
+                resp(ec);
                 return ec;
+            }
+
             if (bChunked)
             {
                 sink = new HttpChunkedSink(sock);

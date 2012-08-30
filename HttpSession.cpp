@@ -155,6 +155,8 @@ namespace ppbox
 
             LOG_INFO("[local_process] option :"<<option<<" format:"<<format_<<" this:"<<this);
 
+            //get_response_head().version = 0x101;
+            //get_response_head().connection = util::protocol::http_field::Connection::close;
 
             if ("mediainfo" == option)
             {//open
@@ -346,7 +348,7 @@ namespace ppbox
                         LOG_INFO("[on_open] Len:"<<len_);
                         if (need_seek_)
                         {
-                            if(seek_ > 0 && g_format_ == "mp4")
+                            if(/*seek_ > 0 && */g_format_ == "mp4")
                             {
                                 std::string strformat("bytes ");
                                 strformat += format(seek_);
