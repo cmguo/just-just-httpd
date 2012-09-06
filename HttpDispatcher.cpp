@@ -218,13 +218,13 @@ namespace ppbox
                     element = node->ToElement();
 
                     TiXmlElement duration("duration");
-                    duration.SetAttribute("value", format(media_info.duration_info.total).c_str());
+                    duration.SetAttribute("value", format(media_info.duration_info.duration).c_str());
 
                     TiXmlElement video("video");
                     video.SetAttribute("codec", "h264");
                     for (boost::uint32_t i = 0; i < media_info.stream_infos.size(); ++i) {
                         if (media_info.stream_infos[i].type == ppbox::demux::MEDIA_TYPE_VIDE) {
-                            ppbox::demux::MediaInfo const & video_stream_info = media_info.stream_infos[i];
+                            ppbox::demux::StreamInfo const & video_stream_info = media_info.stream_infos[i];
                             TiXmlElement videoproperty("property");
                             videoproperty.SetAttribute("frame-rate", format(video_stream_info.video_format.frame_rate).c_str());
                             videoproperty.SetAttribute("width", format(video_stream_info.video_format.width).c_str());
@@ -237,7 +237,7 @@ namespace ppbox
                     TiXmlElement audio("audio");
                     for (boost::uint32_t i = 0; i < media_info.stream_infos.size(); ++i) {
                         if (media_info.stream_infos[i].type == ppbox::demux::MEDIA_TYPE_AUDI) {
-                            ppbox::demux::MediaInfo const & audio_stream_info = media_info.stream_infos[i];
+                            ppbox::demux::StreamInfo const & audio_stream_info = media_info.stream_infos[i];
                             if (audio_stream_info.sub_type == ppbox::demux::AUDIO_TYPE_MP4A) { 
                                 audio.SetAttribute("codec", "aac");
                             } else if (audio_stream_info.sub_type == ppbox::demux::AUDIO_TYPE_MP1A) {
