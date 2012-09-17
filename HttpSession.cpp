@@ -12,7 +12,7 @@
 using namespace ppbox::httpd::error;
 using namespace ppbox::httpd;
 
-#include <ppbox/mux/MuxerBase.h>
+#include <ppbox/mux/MuxBase.h>
 
 #include <util/protocol/http/HttpSocket.h>
 using namespace util::protocol;

@@ -3,7 +3,7 @@
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpSink.h"
 
-#include <ppbox/mux/MuxerBase.h>
+#include <ppbox/mux/MuxBase.h>
 
 #include <util/protocol/http/HttpSocket.h>
 
