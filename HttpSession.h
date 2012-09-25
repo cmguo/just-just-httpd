@@ -74,6 +74,7 @@ namespace ppbox
             void make_m3u8(boost::system::error_code& ec);
 
         private:
+            boost::asio::io_service& ios_;
             ppbox::common::ParseUrlTool url_;
 
             std::string body_;

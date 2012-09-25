@@ -8,8 +8,6 @@
 #include "ppbox/httpd/HttpManager.h"
 using namespace ppbox::httpd::error;
 
-#include <ppbox/ppbox/Common.h>
-
 #include <ppbox/common/CommonUrl.h>
 #include <ppbox/mux/MuxBase.h>
 
@@ -46,6 +44,7 @@ namespace ppbox
         HttpSession::HttpSession(
             HttpManager & mgr)
             : HttpProxy(mgr.io_svc())
+            , ios_(mgr.io_svc())
             ,session_id_(0)
             ,seek_(-1)
         {
@@ -93,7 +92,7 @@ namespace ppbox
                 static ppbox::merge::MergeDispatcher* g_mp4Dispather ; 
                 if (NULL == g_mp4Dispather)
                 {
-                    g_mp4Dispather = new ppbox::merge::MergeDispatcher(global_daemon().io_svc());
+                    g_mp4Dispather = new ppbox::merge::MergeDispatcher(ios_);
                 }
                 dispatcher_ = g_mp4Dispather;
             }
@@ -290,7 +289,7 @@ namespace ppbox
                                 get_response().head().err_msg = "Partial Content";
                             }
                         }
-                        HttpSink * sink = new HttpSink(global_daemon().io_svc(),get_client_data_stream());
+                        HttpSink * sink = new HttpSink(ios_,get_client_data_stream());
                         sinks_.push_back(sink);
                         dispatcher_->setup(session_id_,-1,sink,ec1);
                     }
