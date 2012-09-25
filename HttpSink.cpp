@@ -3,8 +3,6 @@
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpSink.h"
 
-#include <ppbox/mux/MuxBase.h>
-
 #include <util/protocol/http/HttpSocket.h>
 
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpSink", 0)
@@ -14,8 +12,10 @@ namespace ppbox
     namespace httpd
     {
         HttpSink::HttpSink(
-            util::protocol::HttpSocket& sock)
-            :socket_(sock)
+            boost::asio::io_service & io_svc
+            , util::protocol::HttpSocket& sock)
+            : util::stream::Sink(io_svc)
+            , socket_(sock)
         {
         }
 
@@ -24,14 +24,13 @@ namespace ppbox
         }
 
         //工作线程调用
-        size_t HttpSink::write(
-            boost::posix_time::ptime const & time_send, 
-            ppbox::demux::Sample& tag,
-            boost::system::error_code& ec)
+        std::size_t HttpSink::private_write_some(
+            util::stream::StreamConstBuffers const & buffers,
+            boost::system::error_code & ec)
         {
             return boost::asio::write(
                 socket_, 
-                tag.data, 
+                buffers, 
                 boost::asio::transfer_all(), 
                 ec);
         }

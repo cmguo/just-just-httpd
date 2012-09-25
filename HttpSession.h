@@ -3,18 +3,30 @@
 #ifndef      _PPBOX_HTTP_SESSION_
 #define      _PPBOX_HTTP_SESSION_
 
+#include <ppbox/common/ParseUrlTool.h>
 
 #include <util/protocol/http/HttpProxyManager.h>
 #include <util/protocol/http/HttpProxy.h>
 #include <util/protocol/http/HttpRequest.h>
 #include <util/protocol/http/HttpResponse.h>
 
+namespace util
+{
+    namespace stream
+    {
+        class Sink;
+    }
+}
+
 namespace ppbox
 {
+    namespace common
+    {
+        class Dispatcher;
+    }
 
     namespace httpd
     {
-        class HttpDispatcher;
         class HttpManager;
 
         class HttpSession
@@ -36,30 +48,17 @@ namespace ppbox
                 boost::system::error_code const & ec);
 
             virtual void on_finish();
-            
 
             virtual void local_process(response_type const & resp);
 
         private:
-            void open_callback(response_type const &resp,
-                boost::system::error_code const & ec);
-
             void on_open(response_type const &resp,
                 boost::system::error_code const & ec);
 
-            void open_setupup(response_type const &resp,
-                boost::system::error_code const & ec);
-
             void on_playend(response_type const &resp,
-                 boost::system::error_code const & ec);
-
-            void on_seekend(response_type const &resp,
                 boost::system::error_code const & ec);
 
-            void on_common(response_type const &resp,
-                boost::system::error_code const & ec);
-
-            //给客户端写数据
+ 
             boost::system::error_code write(std::string const& msg);
 
             void make_error_response_body(
@@ -68,25 +67,24 @@ namespace ppbox
 
             void Close();
 
-        private:
-            static std::string g_format_;  //保存上一次的format
-            static bool g_record_; //记录play还是recoder
-            static bool g_chunked;  //保存上一次的format
+            void m3u8_protocol(boost::system::error_code& ec);
+
+            void make_mediainfo(boost::system::error_code& ec);
+            void make_playinfo(boost::system::error_code& ec);
+            void make_m3u8(boost::system::error_code& ec);
+
         private:
             boost::asio::io_service & io_svc_;
-            std::string option_;  //transfer_response_data判断上次处理的什么消息
-            std::string format_;  //transfer_response_data判断上次处理的什么消息
-            std::string body_;    //保存回复的消息体
-            std::string host_;   //保留host地址
-			std::string head_;
-            boost::uint32_t len_;
+            
+            ppbox::common::ParseUrlTool url_;
+
+            std::string body_;
+            std::string host_;
             boost::uint32_t session_id_;
-            boost::uint32_t seek_; //保存seek的位置
-            bool need_seek_;
-            boost::system::error_code ec_; //保存open的成功与否
-             
-            HttpDispatcher * dispatcher_;
-			
+            boost::uint32_t seek_;
+
+            ppbox::common::Dispatcher * dispatcher_;
+            std::vector<util::stream::Sink*> sinks_;
         };
 
     } // namespace httpd

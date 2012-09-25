@@ -2,8 +2,9 @@
 
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpManager.h"
-#include "ppbox/httpd/HttpDispatcher.h"
 #include "ppbox/httpd/HttpSession.h"
+
+#include "ppbox/dispather/MuxDispatcher.h"
 
 FRAMEWORK_LOGGER_DECLARE_MODULE("HttpManager");
 
@@ -21,7 +22,7 @@ namespace ppbox
             : ppbox::common::CommonModuleBase<HttpManager>(daemon, "HttpManager")
             , util::protocol::HttpProxyManager<HttpSession,HttpManager>(daemon.io_svc())
             , addr_("0.0.0.0:9006")
-            ,dispatcher_(new HttpDispatcher(daemon))
+            ,dispatcher_(new ppbox::dispather::MuxDispatcher(daemon.io_svc()))
         {
             config().register_module("HttpManager")
                 << CONFIG_PARAM_NAME_RDWR("addr", addr_);

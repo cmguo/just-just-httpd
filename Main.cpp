@@ -30,7 +30,7 @@ int httpd_main(int argc, char * argv[])
         framework::process::Signal::sig_int, 
         boost::bind(&util::daemon::Daemon::post_stop, &my_daemon), true);
 
-    framework::logger::global_logger().load_config(my_daemon.config());
+    //framework::logger::global_logger().load_config(my_daemon.config());
 
     ppbox::common::log_versions();
 

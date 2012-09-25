@@ -1,7 +1,7 @@
-#ifndef _PPBOX_HTTPD_RTPSINK_H_
-#define _PPBOX_HTTPD_RTPSINK_H_
+#ifndef _PPBOX_HTTPD_SINK_H_
+#define _PPBOX_HTTPD_SINK_H_
 
-#include <ppbox/mux/tool/Sink.h>
+#include <util/stream/Sink.h>
 
 namespace util
 {
@@ -10,25 +10,23 @@ namespace util
         class HttpSocket;
     }
 }
-
 namespace ppbox
 {
     namespace httpd
     {
-        class Transport;
-
-        class HttpSink : public ppbox::mux::Sink
+        class HttpSink : public util::stream::Sink
         {
         public:
-            HttpSink(util::protocol::HttpSocket& sock);
+            HttpSink(
+                boost::asio::io_service & io_svc
+                , util::protocol::HttpSocket& sock);
 
             virtual ~HttpSink();
 
         private:
-            virtual size_t write(
-                boost::posix_time::ptime const & time_send, 
-                ppbox::demux::Sample&,
-                boost::system::error_code& ec);
+            virtual std::size_t private_write_some(
+                util::stream::StreamConstBuffers const & buffers,
+                boost::system::error_code & ec);
 
         private:
             util::protocol::HttpSocket& socket_;

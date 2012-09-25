@@ -8,10 +8,13 @@
 
 namespace ppbox
 {
+    namespace common
+    {
+        class Dispatcher;
+    }
     namespace httpd
     {
         class HttpSession;
-        class HttpDispatcher;
 
         class HttpManager
             : public ppbox::common::CommonModuleBase<HttpManager>
@@ -30,14 +33,14 @@ namespace ppbox
 
             using ppbox::common::CommonModuleBase<HttpManager>::io_svc;
 
-            HttpDispatcher * dispatcher()
+            ppbox::common::Dispatcher * dispatcher()
             {
                 return dispatcher_;
             }
 
         private:
             framework::network::NetName addr_;
-            HttpDispatcher* dispatcher_;
+            ppbox::common::Dispatcher* dispatcher_;
         };
 
     } // namespace httpd

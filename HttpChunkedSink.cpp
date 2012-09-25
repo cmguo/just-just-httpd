@@ -18,8 +18,10 @@ namespace ppbox
     {
 
         HttpChunkedSink::HttpChunkedSink(
+            boost::asio::io_service & io_svc,
             util::protocol::HttpSocket& sock)
-            : socket_(sock)
+            : util::stream::Sink(io_svc)
+            , socket_(sock)
         {
         }
 
@@ -27,24 +29,13 @@ namespace ppbox
         {
         }
 
-        boost::system::error_code HttpChunkedSink::on_finish(
-            boost::system::error_code const & ec)
-        {
-            boost::system::error_code ec1;
-            socket_.send(util::protocol::HttpChunkedSocket<util::protocol::HttpSocket>::eof(),0,ec1);
-            LOG_INFO("[on_finish] ec:"<<ec1.message());
-            return ec1;
-        }
-
-        //工作线程调用
-        size_t HttpChunkedSink::write(
-            boost::posix_time::ptime const & time_send, 
-            ppbox::demux::Sample & sample,
-            boost::system::error_code& ec)
+        std::size_t HttpChunkedSink::private_write_some(
+            util::stream::StreamConstBuffers const & buffers,
+            boost::system::error_code & ec)
         {
             return boost::asio::write(
                 socket_, 
-                sample.data, 
+                buffers, 
                 boost::asio::transfer_all(), 
                 ec);
         }

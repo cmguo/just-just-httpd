@@ -1,7 +1,7 @@
 #ifndef _PPBOX_HTTPD_HTTP_CHUNKED_SINK_H_
 #define _PPBOX_HTTPD_HTTP_CHUNKED_SINK_H_
 
-#include <ppbox/mux/tool/Sink.h>
+#include <util/stream/Sink.h>
 
 #include <util/protocol/http/HttpChunkedSocket.h>
 
@@ -21,22 +21,19 @@ namespace ppbox
         class Transport;
 
         class HttpChunkedSink
-            : public ppbox::mux::Sink
+            : public util::stream::Sink
         {
         public:
             HttpChunkedSink(
+                 boost::asio::io_service & io_svc,
                 util::protocol::HttpSocket& sock);
 
             virtual ~HttpChunkedSink();
 
         private:
-            virtual size_t write(
-                boost::posix_time::ptime const & time_send, 
-                ppbox::demux::Sample & sample,
-                boost::system::error_code& ec);
-
-            boost::system::error_code on_finish(
-                boost::system::error_code const & ec);
+            virtual std::size_t private_write_some(
+                util::stream::StreamConstBuffers const & buffers,
+                boost::system::error_code & ec);
 
         private:
             util::protocol::HttpChunkedSocket<util::protocol::HttpSocket> socket_;
