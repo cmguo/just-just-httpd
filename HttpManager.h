@@ -33,14 +33,15 @@ namespace ppbox
 
             using ppbox::common::CommonModuleBase<HttpManager>::io_svc;
 
-            ppbox::common::Dispatcher * dispatcher()
+            ppbox::common::Dispatcher * dispatcher(const std::string& format)
             {
-                return dispatcher_;
+                return (format == "mp4")?dispatcher_[0]:dispatcher_[1];
             }
 
         private:
             framework::network::NetName addr_;
-            ppbox::common::Dispatcher* dispatcher_;
+            // 0 Ϊmp4dispather
+            ppbox::common::Dispatcher* dispatcher_[2];
         };
 
     } // namespace httpd

@@ -13,7 +13,7 @@ using namespace ppbox::httpd::error;
 
 
 #include <ppbox/dispather/MuxDispatcher.h>
-#include <ppbox/merge/MergeDispatcher.h>
+//#include <ppbox/merge/MergeDispatcher.h>
 
 
 #include <util/protocol/http/HttpSocket.h>
@@ -44,11 +44,12 @@ namespace ppbox
         HttpSession::HttpSession(
             HttpManager & mgr)
             : HttpProxy(mgr.io_svc())
+            , mgr_(mgr)
             , ios_(mgr.io_svc())
             ,session_id_(0)
             ,seek_(-1)
+            , dispatcher_(NULL)
         {
-            dispatcher_ = mgr.dispatcher();
         }
 
         HttpSession::~HttpSession()
@@ -86,16 +87,7 @@ namespace ppbox
 
             //LOG_INFO( "[local_process] playlink:"<<playlink<<" option:"<<option<<" format:"<<format<<" this:"<<this);
 
-
-            if (format == "mp4") //dispatherÑ¡Ôñ
-            {
-                static ppbox::merge::MergeDispatcher* g_mp4Dispather ; 
-                if (NULL == g_mp4Dispather)
-                {
-                    g_mp4Dispather = new ppbox::merge::MergeDispatcher(ios_);
-                }
-                dispatcher_ = g_mp4Dispather;
-            }
+            dispatcher_ = mgr_.dispatcher(format);
 
             //play mediainfo playinfo
 
@@ -404,7 +396,7 @@ namespace ppbox
             get_response_head()["Content-Type"]="{application/x-mpegURL}";
             get_response_head()["Connection"] = "Close";
             
-            ((ppbox::dispather::MuxDispatcher*)dispatcher_)->set_host(host_);
+            //((ppbox::dispather::MuxDispatcher*)dispatcher_)->set_host(host_);
 
             ppbox::common::MediaInfo infoTemp;
             ec = dispatcher_->get_media_info(infoTemp);

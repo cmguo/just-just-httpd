@@ -75,6 +75,8 @@ namespace ppbox
 
         private:
             boost::asio::io_service& ios_;
+            HttpManager & mgr_;
+
             ppbox::common::ParseUrlTool url_;
 
             std::string body_;
