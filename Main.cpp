@@ -9,7 +9,10 @@
 
 #include <boost/bind.hpp>
 
-FRAMEWORK_LOGGER_DECLARE_MODULE("ppbox_httpd");
+#include <framework/logger/StreamRecord.h>
+using namespace framework::logger;
+
+//FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox_httpd",0)
 
 int httpd_main(int argc, char * argv[])
 {

@@ -8,6 +8,8 @@
 #include "ppbox/httpd/HttpManager.h"
 using namespace ppbox::httpd::error;
 
+#include <ppbox/ppbox/Common.h>
+
 #include <ppbox/common/CommonUrl.h>
 #include <ppbox/mux/MuxBase.h>
 
@@ -44,7 +46,6 @@ namespace ppbox
         HttpSession::HttpSession(
             HttpManager & mgr)
             : HttpProxy(mgr.io_svc())
-            ,io_svc_(mgr.io_svc())
             ,session_id_(0)
             ,seek_(-1)
         {
@@ -323,7 +324,7 @@ namespace ppbox
             {
                 make_error_response_body(body_,ec1);
             }
-            io_svc_.post(boost::bind(resp, ec1,body_.size()));
+            resp(ec1,body_.size());
         }
 
         void HttpSession::on_playend(response_type const &resp,
