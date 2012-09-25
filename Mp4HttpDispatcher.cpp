@@ -55,20 +55,19 @@ namespace ppbox
         Mp4HttpDispatcher::Mp4HttpDispatcher(
             util::daemon::Daemon & daemon)
             : HttpDispatcher(daemon)
-            , io_svc_(daemon.io_svc())
-            ,timer_(daemon.io_svc())
+            , timer_(daemon.io_svc())
 #ifndef PPBOX_DISABLE_VOD
-            ,bigmp4_(NULL)
+            , bigmp4_(NULL)
 #endif
 #ifndef PPBOX_DISABLE_PEER
-            ,bigmp4_(NULL)
+            , bigmp4_(NULL)
 #endif
-            ,stream_(NULL)
-            ,streambuf_(NULL)
-            ,seek_(0)
-            ,session_id_(0)
-            ,list_(NULL)
-            ,playing_(false)
+            , stream_(NULL)
+            , streambuf_(NULL)
+            , seek_(0)
+            , session_id_(0)
+            , list_(NULL)
+            , playing_(false)
         {
 
         }
@@ -139,10 +138,10 @@ namespace ppbox
                         stream_tmp_.str("");
                         if(NULL != bigmp4_) delete bigmp4_;
 #ifndef PPBOX_DISABLE_VOD
-                        bigmp4_ = new ppbox::vod::BigMp4(io_svc_);
+                        bigmp4_ = new ppbox::vod::BigMp4(get_daemon().io_svc());
 #endif
 #ifndef PPBOX_DISABLE_PEER
-                        bigmp4_ = new ppbox::peer::BigMp4(io_svc_);
+                        bigmp4_ = new ppbox::peer::BigMp4(get_daemon().io_svc());
 #endif
                     }
                     stream_tmp_.seekg(0, std::ios_base::beg);
@@ -422,71 +421,77 @@ namespace ppbox
 #else
             ppbox::peer::BigMp4Info info;
 #endif
-            if (bigmp4_) {
+            if (bigmp4_) 
+            {
                 ec = bigmp4_->get_info_statictis(info);
-                if(!ec)
-                {
-                    TiXmlDocument doc;
-                    const char* strXMLContent =
-                        "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
-                        "<template module=\"playinfo\" version=\"1.0\">"
-                        "</template>";
-
-                    doc.Parse( strXMLContent );
-                    if ( !doc.Error() )
-                    {
-                        TiXmlNode* node = 0;
-                        TiXmlElement* element = 0;
-                        node = doc.FirstChild( "template");
-                        element = node->ToElement();
-
-                        TiXmlElement file("file");
-                        TiXmlElement headsize("headsize");
-                        TiXmlText file_headsize(framework::string::format(info.head_size).c_str());
-                        headsize.InsertEndChild(file_headsize);
-                        TiXmlElement bodysize("bodysize");
-                        TiXmlText file_bodysize(framework::string::format(info.body_size).c_str());
-                        bodysize.InsertEndChild(file_bodysize);
-                        TiXmlElement tailsize("tailsize");
-                        TiXmlText file_tailsize(framework::string::format(info.tail_size).c_str());
-                        tailsize.InsertEndChild(file_tailsize);
-                        file.InsertEndChild(headsize);
-                        file.InsertEndChild(bodysize);
-                        file.InsertEndChild(tailsize);
-
-                        TiXmlElement download("download");
-                        TiXmlElement offset("offset");
-                        TiXmlText d_offset(framework::string::format(info.cur_offset).c_str());
-                        offset.InsertEndChild(d_offset);
-                        TiXmlElement speed("speed");
-                        TiXmlText d_speed(framework::string::format(info.speed).c_str());
-                        speed.InsertEndChild(d_speed);
-                        TiXmlElement area("area");
-                        TiXmlText d_area(framework::string::format(info.area).c_str());
-                        area.InsertEndChild(d_area);
-                        TiXmlElement percent("percent");
-                        TiXmlText d_percent(framework::string::format(info.percent).c_str());
-                        percent.InsertEndChild(d_percent);
-                        TiXmlElement headpercent("headpercent");
-                        TiXmlText head_percent(framework::string::format(info.headpercent).c_str());
-                        headpercent.InsertEndChild(head_percent);
-
-                        download.InsertEndChild(offset);
-                        download.InsertEndChild(speed);
-                        download.InsertEndChild(area);
-                        download.InsertEndChild(percent);
-                        download.InsertEndChild(headpercent);
-
-                        element->InsertEndChild(file);
-                        element->InsertEndChild(download);
-                    }
-
-                    TiXmlPrinter printer;
-                    printer.SetStreamPrinting();
-                    doc.Accept( &printer );
-                    body = printer.CStr();
-                }
             }
+            else
+            {
+                ec = util::protocol::http_error::not_found;
+            }
+            if(!ec)
+            {
+                TiXmlDocument doc;
+                const char* strXMLContent =
+                    "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                    "<template module=\"playinfo\" version=\"1.0\">"
+                    "</template>";
+
+                doc.Parse( strXMLContent );
+                if ( !doc.Error() )
+                {
+                    TiXmlNode* node = 0;
+                    TiXmlElement* element = 0;
+                    node = doc.FirstChild( "template");
+                    element = node->ToElement();
+
+                    TiXmlElement file("file");
+                    TiXmlElement headsize("headsize");
+                    TiXmlText file_headsize(framework::string::format(info.head_size).c_str());
+                    headsize.InsertEndChild(file_headsize);
+                    TiXmlElement bodysize("bodysize");
+                    TiXmlText file_bodysize(framework::string::format(info.body_size).c_str());
+                    bodysize.InsertEndChild(file_bodysize);
+                    TiXmlElement tailsize("tailsize");
+                    TiXmlText file_tailsize(framework::string::format(info.tail_size).c_str());
+                    tailsize.InsertEndChild(file_tailsize);
+                    file.InsertEndChild(headsize);
+                    file.InsertEndChild(bodysize);
+                    file.InsertEndChild(tailsize);
+
+                    TiXmlElement download("download");
+                    TiXmlElement offset("offset");
+                    TiXmlText d_offset(framework::string::format(info.cur_offset).c_str());
+                    offset.InsertEndChild(d_offset);
+                    TiXmlElement speed("speed");
+                    TiXmlText d_speed(framework::string::format(info.speed).c_str());
+                    speed.InsertEndChild(d_speed);
+                    TiXmlElement area("area");
+                    TiXmlText d_area(framework::string::format(info.area).c_str());
+                    area.InsertEndChild(d_area);
+                    TiXmlElement percent("percent");
+                    TiXmlText d_percent(framework::string::format(info.percent).c_str());
+                    percent.InsertEndChild(d_percent);
+                    TiXmlElement headpercent("headpercent");
+                    TiXmlText head_percent(framework::string::format(info.headpercent).c_str());
+                    headpercent.InsertEndChild(head_percent);
+
+                    download.InsertEndChild(offset);
+                    download.InsertEndChild(speed);
+                    download.InsertEndChild(area);
+                    download.InsertEndChild(percent);
+                    download.InsertEndChild(headpercent);
+
+                    element->InsertEndChild(file);
+                    element->InsertEndChild(download);
+                }
+
+                TiXmlPrinter printer;
+                printer.SetStreamPrinting();
+                doc.Accept( &printer );
+                body = printer.CStr();
+            }
+            
 #else
             ec =ppbox::httpd::error::httpd_stream_end;
 #endif

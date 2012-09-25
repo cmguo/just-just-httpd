@@ -130,7 +130,6 @@ namespace ppbox
 
         private:
 
-            boost::asio::io_service& io_svc_;
             boost::asio::deadline_timer timer_;
 
 #ifndef PPBOX_DISABLE_VOD 
