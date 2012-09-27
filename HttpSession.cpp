@@ -20,22 +20,18 @@ using namespace ppbox::httpd::error;
 using namespace util::protocol;
 
 #include <framework/string/Base64.h>
+#include <framework/logger/Logger.h>
 #include <framework/logger/StreamRecord.h>
-using namespace framework::network;
-using namespace framework::string;
 using namespace framework::logger;
 
 #include <tinyxml/tinyxml.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/bind.hpp>
-using namespace boost::system;
-using namespace boost::asio;
-using namespace boost::system;
 
 #include <vector>
 
-FRAMEWORK_LOGGER_DECLARE_MODULE("HttpSession");
+FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpSession", 0);
 
 namespace ppbox
 {
@@ -75,7 +71,7 @@ namespace ppbox
             //LOG_INFO("[local_process]");
 
             get_request_head().get_content(std::cout);
-            error_code ec;
+            boost::system::error_code ec;
             std::string tmphost = "http://host";
             framework::string::Url url(tmphost + get_request_head().path);
             ppbox::common::CommonUrl comUrl(url);
@@ -85,7 +81,7 @@ namespace ppbox
             std::string playlink = url_.playlink();
             std::string format = url_.format();
 
-            //LOG_INFO( "[local_process] playlink:"<<playlink<<" option:"<<option<<" format:"<<format<<" this:"<<this);
+            LOG_INFO( "[local_process] playlink:"<<playlink<<" option:"<<option<<" format:"<<format<<" this:"<<this);
 
             dispatcher_ = mgr_.dispatcher(format);
 
@@ -199,13 +195,13 @@ namespace ppbox
 
         void HttpSession::on_finish()
         {
-            //LOG_INFO( "[on_finish] session_id:"<<session_id_);
+            LOG_INFO( "[on_finish] session_id:"<<session_id_);
             HttpSession::Close();
         }
         void HttpSession::on_error(
             boost::system::error_code const & ec)
         {
-            //LOG_DEBUG( "[on_error] session_id:"<<session_id_<<" ec:" << ec.message());
+            LOG_INFO( "[on_error] session_id:"<<session_id_<<" ec:" << ec.message());
             HttpSession::Close();
         }
 
@@ -213,6 +209,7 @@ namespace ppbox
         void HttpSession::on_open(response_type const &resp,
             boost::system::error_code const & ec)
         {
+            LOG_INFO( "[on_open] session_id:"<<session_id_<<" ec:" << ec.message());
             boost::system::error_code ec1 = ec;
             boost::uint32_t len = 0;
 
@@ -269,11 +266,11 @@ namespace ppbox
                             if(seek_ > 0 && len > seek_)
                             {
                                 std::string strformat("bytes ");
-                                strformat += format(seek_);
+                                strformat += framework::string::format(seek_);
                                 strformat += "-";
-                                strformat += format(len-1);
+                                strformat += framework::string::format(len-1);
                                 strformat += "/";
-                                strformat += format(len);
+                                strformat += framework::string::format(len);
                                 get_response_head()["Content-Range"]="{"+strformat+"}";
 
                                 len -= seek_;
@@ -300,7 +297,7 @@ namespace ppbox
                     }
                     else
                     {
-                        ////LOG_ERROR( "[open_setupup] format_:"<<url_.format());
+                        LOG_ERROR( "[open_setupup] format_:"<<url_.format());
                     }
 
 
@@ -321,7 +318,7 @@ namespace ppbox
         void HttpSession::on_playend(response_type const &resp,
             boost::system::error_code const & ec)
         {
-            //LOG_INFO( "[on_playend] ec:"<<ec.message());
+            LOG_INFO( "[on_playend] ec:"<<ec.message());
             resp(ec,std::pair<std::size_t, std::size_t>(0,0));
         }
 
@@ -335,7 +332,7 @@ namespace ppbox
                 boost::asio::transfer_all(), 
                 ec);
 
-            //LOG_DEBUG( "[write] msg size:"<<msg.size()<<" ec:"<<ec.message());
+            LOG_DEBUG( "[write] msg size:"<<msg.size()<<" ec:"<<ec.message());
             return ec;
         }
 
@@ -352,7 +349,7 @@ namespace ppbox
             // set error code value
             respone_str += last_error.category().name();
             respone_str += "</category>\r\n<vaule>";
-            respone_str += format(last_error.value());
+            respone_str += framework::string::format(last_error.value());
             respone_str += "</vaule>\r\n<message>";
             // set error msg
             if (last_error) {
@@ -365,7 +362,7 @@ namespace ppbox
 
         void HttpSession::Close()
         {
-            //LOG_INFO( "[Close] session_id:"<<session_id_);
+            LOG_INFO( "[Close] session_id:"<<session_id_);
             if(session_id_)
             {
                 if (url_.format() == "m3u8" && ("ts" == url_.format() || "m3u8" == url_.format()))
