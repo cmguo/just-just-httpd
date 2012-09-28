@@ -4,7 +4,7 @@
 #include "ppbox/httpd/HttpManager.h"
 #include "ppbox/httpd/HttpSession.h"
 
-#include "ppbox/dispather/MuxDispatcher.h"
+#include "ppbox/dispatcher/MuxDispatcher.h"
 #include "ppbox/merge/MergeDispatcher.h"
 
 FRAMEWORK_LOGGER_DECLARE_MODULE("HttpManager");
@@ -25,7 +25,7 @@ namespace ppbox
             , addr_("0.0.0.0:9006")
         {
             dispatcher_[0] = new ppbox::merge::MergeDispatcher(daemon.io_svc());
-            dispatcher_[1] = new ppbox::dispather::MuxDispatcher(daemon.io_svc());
+            dispatcher_[1] = new ppbox::dispatcher::MuxDispatcher(daemon.io_svc());
 
             config().register_module("HttpManager")
                 << CONFIG_PARAM_NAME_RDWR("addr", addr_);

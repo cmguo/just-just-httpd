@@ -12,7 +12,7 @@ using namespace ppbox::httpd::error;
 #include <ppbox/mux/MuxBase.h>
 
 
-#include <ppbox/dispather/MuxDispatcher.h>
+#include <ppbox/dispatcher/MuxDispatcher.h>
 //#include <ppbox/merge/MergeDispatcher.h>
 
 
@@ -393,7 +393,7 @@ namespace ppbox
             get_response_head()["Content-Type"]="{application/x-mpegURL}";
             get_response_head()["Connection"] = "Close";
             
-            //((ppbox::dispather::MuxDispatcher*)dispatcher_)->set_host(host_);
+            //((ppbox::dispatcher::MuxDispatcher*)dispatcher_)->set_host(host_);
 
             ppbox::common::MediaInfo infoTemp;
             ec = dispatcher_->get_media_info(infoTemp);
