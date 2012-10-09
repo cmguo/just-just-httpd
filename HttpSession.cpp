@@ -12,7 +12,7 @@ using namespace ppbox::httpd::error;
 #include <ppbox/mux/MuxBase.h>
 
 
-#include <ppbox/dispatcher/MuxDispatcher.h>
+#include <ppbox/dispatcher/Dispatcher.h>
 //#include <ppbox/merge/MergeDispatcher.h>
 
 
@@ -83,7 +83,7 @@ namespace ppbox
 
             LOG_INFO( "[local_process] playlink:"<<playlink<<" option:"<<option<<" format:"<<format<<" this:"<<this);
 
-            dispatcher_ = mgr_.dispatcher(format);
+            dispatcher_ = mgr_.dispatcher();
 
             //play mediainfo playinfo
 
@@ -256,7 +256,7 @@ namespace ppbox
                     else
                     {
                         get_response_head()["Accept-Ranges"]="{bytes}";
-                        ppbox::common::MediaInfo info;
+                        ppbox::dispatcher::MediaInfo info;
                         dispatcher_->get_media_info(info);
                         len = info.filesize;
                         //dispatcher_->get_file_length(len);
@@ -395,7 +395,7 @@ namespace ppbox
             
             //((ppbox::dispatcher::MuxDispatcher*)dispatcher_)->set_host(host_);
 
-            ppbox::common::MediaInfo infoTemp;
+            ppbox::dispatcher::MediaInfo infoTemp;
             ec = dispatcher_->get_media_info(infoTemp);
 
             if(!ec && NULL != infoTemp.attachment)

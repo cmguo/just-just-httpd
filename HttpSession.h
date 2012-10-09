@@ -20,7 +20,7 @@ namespace util
 
 namespace ppbox
 {
-    namespace common
+    namespace dispatcher
     {
         class Dispatcher;
     }
@@ -84,7 +84,7 @@ namespace ppbox
             boost::uint32_t session_id_;
             boost::uint32_t seek_;
 
-            ppbox::common::Dispatcher * dispatcher_;
+            ppbox::dispatcher::Dispatcher * dispatcher_;
             std::vector<util::stream::Sink*> sinks_;
         };
 
