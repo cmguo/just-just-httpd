@@ -10,7 +10,7 @@
 #include <framework/logger/StreamRecord.h>
 using namespace framework::logger;
 
-FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpChunkedSink", 0)
+FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpChunkedSink", Debug)
 
 namespace ppbox
 {

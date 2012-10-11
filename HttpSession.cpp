@@ -31,7 +31,7 @@ using namespace framework::logger;
 
 #include <vector>
 
-FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("HttpSession", 0);
+FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpSession", Debug);
 
 namespace ppbox
 {
