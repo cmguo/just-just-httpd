@@ -5,6 +5,10 @@
 
 #include <util/protocol/http/HttpSocket.h>
 
+#include <framework/logger/Logger.h>
+#include <framework/logger/StreamRecord.h>
+using namespace framework::logger;
+
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpSink", Debug)
 
 namespace ppbox
