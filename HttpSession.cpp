@@ -232,17 +232,19 @@ namespace ppbox
                 else
                 {
 
-                    if(request().head().range.is_initialized())
+                    if (seek_ == -1)
                     {
-                        seek_ = get_request_head().range.get()[0].begin();
-                    }
+                        if(request().head().range.is_initialized())
+                        {
+                            seek_ = get_request_head().range.get()[0].begin();
+                        }
 
-                    if (!url_.url().param("seek").empty())
-                    {
-                        seek_ = atoi(url_.url().param("seek").c_str());
-                        seek_ *= 1000;
+                        if (!url_.url().param("seek").empty())
+                        {
+                            seek_ = atoi(url_.url().param("seek").c_str());
+                            seek_ *= 1000;
+                        }
                     }
-                    
 
 //setup 
                     //确定用什么sink Connection: keep-alive
