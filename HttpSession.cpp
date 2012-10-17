@@ -174,7 +174,7 @@ namespace ppbox
             boost::system::error_code ec;
                 
             //LOG_INFO( "[transfer_response_data] ");
-            if (!body_.empty() )
+            if (!body_.empty() || (url_.option() != "play" && url_.option() != "record"))
             {
                 std::cout<<body_<<std::endl;
                 size_t tSize = body_.size();
