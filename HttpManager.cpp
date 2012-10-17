@@ -7,10 +7,7 @@
 #include <ppbox/dispatcher/Dispatcher.h>
 #include <ppbox/dispatcher/DispatcherManager.h>
 
-FRAMEWORK_LOGGER_DECLARE_MODULE("HttpManager");
-
-//#define LOG_S(a,b) std::cout<<b<<std::endl; 
-
+FRAMEWORK_LOGGER_DECLARE_MODULE("ppbox.httpd.HttpManager");
 
 namespace ppbox
 {
