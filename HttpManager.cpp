@@ -1,11 +1,11 @@
-//HttpServer.cpp
+// HttpManager.cpp
 
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpManager.h"
 #include "ppbox/httpd/HttpSession.h"
+#include "ppbox/httpd/Version.h"
 
-#include <ppbox/dispatcher/Dispatcher.h>
-#include <ppbox/dispatcher/DispatcherManager.h>
+#include <ppbox/dispatch/DispatchModule.h>
 
 FRAMEWORK_LOGGER_DECLARE_MODULE("ppbox.httpd.HttpManager");
 
@@ -14,13 +14,12 @@ namespace ppbox
     namespace httpd
     {
 
-
         HttpManager::HttpManager(
             util::daemon::Daemon & daemon)
             : ppbox::common::CommonModuleBase<HttpManager>(daemon, "HttpManager")
-            , util::protocol::HttpProxyManager<HttpSession,HttpManager>(daemon.io_svc())
-            , dispMgr_(util::daemon::use_module<ppbox::dispatcher::DispatcherManager>(daemon))
+            , util::protocol::HttpServerManager<HttpSession,HttpManager>(daemon.io_svc())
             , addr_("0.0.0.0:9006")
+            , dispatch_module_(util::daemon::use_module<ppbox::dispatch::DispatchModule>(get_daemon()))
         {
             config().register_module("HttpManager")
                 << CONFIG_PARAM_NAME_RDWR("addr", addr_);
@@ -42,13 +41,5 @@ namespace ppbox
             stop();
         }
 
-        ppbox::dispatcher::Dispatcher * HttpManager::dispatcher()
-        {
-            return dispMgr_.dispather();
-        }
-
     } // namespace httpd
-
 } // namespace ppbox
-
-

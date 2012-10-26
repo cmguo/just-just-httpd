@@ -1,49 +1,52 @@
-//HttpServer.h
+// HttpServer.h
 
-#ifndef      _PPBOX_HTTP_MANAGER_
-#define      _PPBOX_HTTP_MANAGER_
+#ifndef _PPBOX_HTTPD_HTTP_MANAGER_H_
+#define _PPBOX_HTTPD_HTTP_MANAGER_H_
 
 #include <ppbox/common/CommonModuleBase.h>
-#include <util/protocol/http/HttpProxyManager.h>
+#include <util/protocol/http/HttpServerManager.h>
 
 namespace ppbox
 {
-    namespace dispatcher
+    namespace dispatch
     {
-        class Dispatcher;
-        class DispatcherManager;
+        class DispatchModule;
     }
+
     namespace httpd
     {
         class HttpSession;
 
         class HttpManager
             : public ppbox::common::CommonModuleBase<HttpManager>
-            , public util::protocol::HttpProxyManager<HttpSession,HttpManager>
+            , public util::protocol::HttpServerManager<HttpSession, HttpManager>
         {
-        public:
-            virtual boost::system::error_code startup();
-
-            virtual void shutdown();
-
         public:
             HttpManager(
                 util::daemon::Daemon & daemon);
 
             ~HttpManager();
 
+        public:
+            virtual boost::system::error_code startup();
+
+            virtual void shutdown();
+
+        public:
+            // avoid ambiguous
             using ppbox::common::CommonModuleBase<HttpManager>::io_svc;
 
-            ppbox::dispatcher::Dispatcher* dispatcher();
+            ppbox::dispatch::DispatchModule & dispatch_module()
+            {
+                return dispatch_module_;
+            }
 
         private:
-            ppbox::dispatcher::DispatcherManager& dispMgr_;
             framework::network::NetName addr_;
-            // 0 Ϊmp4dispather
+            ppbox::dispatch::DispatchModule & dispatch_module_;
         };
 
     } // namespace httpd
-
 } // namespace ppbox
 
-#endif
+#endif // _PPBOX_HTTPD_HTTP_MANAGER_H_

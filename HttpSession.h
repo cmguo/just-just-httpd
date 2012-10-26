@@ -1,36 +1,28 @@
-//HttpServer.h
+// HttpSession.h
 
-#ifndef      _PPBOX_HTTP_SESSION_
-#define      _PPBOX_HTTP_SESSION_
+#ifndef _PPBOX_HTTPD_HTTP_SESSION_H_
+#define _PPBOX_HTTPD_HTTP_SESSION_H_
 
-#include <ppbox/common/ParseUrlTool.h>
-
-#include <util/protocol/http/HttpProxyManager.h>
-#include <util/protocol/http/HttpProxy.h>
+#include <util/protocol/http/HttpServer.h>
 #include <util/protocol/http/HttpRequest.h>
 #include <util/protocol/http/HttpResponse.h>
 
-namespace util
-{
-    namespace stream
-    {
-        class Sink;
-    }
-}
+#include <framework/string/Url.h>
 
 namespace ppbox
 {
-    namespace dispatcher
+    namespace dispatch
     {
-        class Dispatcher;
+        class DispatcherBase;
     }
 
     namespace httpd
     {
+
         class HttpManager;
 
         class HttpSession
-            : public util::protocol::HttpProxy
+            : public util::protocol::HttpServer
         {
         public:
             HttpSession(
@@ -38,9 +30,7 @@ namespace ppbox
 
             ~HttpSession();
 
-            virtual bool on_receive_request_head(
-                util::protocol::HttpRequestHead & request_head);
-
+        public:
             virtual void transfer_response_data(
                 response_type const & resp);
 
@@ -58,14 +48,9 @@ namespace ppbox
             void on_playend(response_type const &resp,
                 boost::system::error_code const & ec);
 
- 
-            boost::system::error_code write(std::string const& msg);
-
             void make_error_response_body(
                 std::string& respone_str,
                 boost::system::error_code const & last_error);
-
-            void Close();
 
             void m3u8_protocol(boost::system::error_code& ec);
 
@@ -74,17 +59,15 @@ namespace ppbox
             void make_m3u8(boost::system::error_code& ec);
 
         private:
-            boost::asio::io_service& ios_;
             HttpManager & mgr_;
 
-            ppbox::common::ParseUrlTool url_;
+            framework::string::Url url_;
 
             std::string body_;
             std::string host_;
-            boost::uint32_t session_id_;
             boost::uint32_t seek_;
 
-            ppbox::dispatcher::Dispatcher * dispatcher_;
+            ppbox::dispatch::DispatcherBase * dispatcher_;
             std::vector<util::stream::Sink*> sinks_;
         };
 
@@ -92,4 +75,4 @@ namespace ppbox
 
 } // namespace ppbox
 
-#endif
+#endif // _PPBOX_HTTPD_HTTP_SESSION_H_
