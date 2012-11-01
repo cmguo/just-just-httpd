@@ -1,53 +1,19 @@
-//HttpServer.cpp
+// HttpSession.cpp
 
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpSession.h"
-#include "ppbox/httpd/HttpError.h"
-#include "ppbox/httpd/HttpSink.h"
-#include "ppbox/httpd/HttpManager.h"
+#include "ppbox/httpd/SessionDispatcher.h"
+#include "ppbox/httpd/HttpdModule.h"
+#include "ppbox/httpd/M3u8Session.h"
 
 #include <ppbox/dispatch/DispatchModule.h>
 #include <ppbox/dispatch/DispatcherBase.h>
 
-#include <ppbox/data/MediaInfo.h>
-
-#include <ppbox/common/CommonUrl.h>
-
-#include <util/protocol/http/HttpSocket.h>
-#include <util/archive/XmlOArchive.h>
-#include <util/serialization/ErrorCode.h>
-using namespace util::protocol;
-
-#include <framework/string/Base64.h>
 #include <framework/logger/Logger.h>
 #include <framework/logger/StreamRecord.h>
 using namespace framework::logger;
 
-#include <boost/lexical_cast.hpp>
-#include <boost/bind.hpp>
-
-FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpSession", Debug);
-
-namespace util
-{
-    namespace serialization
-    {
-
-        template <
-            typename Archive
-        >
-        void serialize(
-            Archive & ar, 
-            ppbox::data::MediaInfo & info)
-        {
-            ar & SERIALIZATION_NVP_1(info, file_size);
-            ar & SERIALIZATION_NVP_1(info, duration);
-            ar & SERIALIZATION_NVP_1(info, bitrate);
-            ar & SERIALIZATION_NVP_1(info, is_live);
-        }
-
-    }
-}
+FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpSession", framework::logger::Debug);
 
 namespace ppbox
 {
@@ -55,220 +21,143 @@ namespace ppbox
     {
 
         HttpSession::HttpSession(
-            HttpManager & mgr)
-            : HttpServer(mgr.io_svc())
-            , mgr_(mgr)
-            , dispatcher_(NULL)
+            ppbox::dispatch::DispatcherBase & dispatcher, 
+            delete_t deleter)
         {
+            dispatcher_ = new SessionDispatcher(dispatcher, 
+                boost::bind(&HttpSession::delete_dispatcher, this, deleter, _1));
         }
 
         HttpSession::~HttpSession()
         {
-            for (std::vector<util::stream::Sink *>::iterator iter = sinks_.begin();
-                iter != sinks_.end();
-                ++iter) {
-                delete *iter;
-            }
-            sinks_.clear();
-
-            if (dispatcher_) {
-                mgr_.dispatch_module().free_dispatcher(dispatcher_);
-            }
         }
 
-        void HttpSession::local_process(response_type const & resp)
+        static void nop_resp(boost::system::error_code const & ec) {}
+
+        void HttpSession::start(
+            framework::string::Url const & url)
         {
-            //LOG_INFO("[local_process]");
+            dispatcher_->async_open(url, nop_resp);
+        }
 
-            request_head().get_content(std::cout);
-
-            url_.from_string("http://host" + request_head().path);
-
+        void HttpSession::close()
+        {
             boost::system::error_code ec;
-            ppbox::common::decode_url(url_, ec)
-                && mgr_.dispatch_module().normalize_url(url_, ec);
+            dispatcher_->close(ec);
+        }
 
-            if (!ec) {
-                std::string option = url_.path();
-                if (option != "/mediainfo"
-                    && option != "/playinfo"
-                    && option != "/play") {
-                        ec = framework::system::logic_error::invalid_argument;
+        ppbox::dispatch::DispatcherBase * HttpSession::attach(
+            framework::string::Url & url)
+        {
+            if (url.param("close") == "true") {
+                close();
+            }
+            return dispatcher_;
+        }
+
+        void HttpSession::delete_dispatcher(
+            delete_t deleter, 
+            ppbox::dispatch::DispatcherBase & dispatcher)
+        {
+            struct find_by_session
+            {
+                find_by_session(
+                    HttpSession * session) 
+                    : session_(session)
+                {
                 }
 
-                if (option == "/play") {
-                    if(request().head().range.is_initialized()) {
-                        util::protocol::http_field::RangeUnit unit = 
-                            request().head().range.get()[0];
-                        seek_range_.type = ppbox::dispatch::SeekRange::byte;
-                        seek_range_.beg = unit.begin();
-                        if (unit.has_end()) {
-                            seek_range_.end = unit.end();
+                bool operator()(
+                    session_map_t::value_type const & v)
+                {
+                    return v.second == session_;
+                }
+
+            private:
+                HttpSession * session_;
+            } finder(this);
+
+            deleter(&dispatcher);
+            session_map().erase(std::find_if(session_map().begin(), session_map().end(), finder));
+            delete this;
+        }
+
+        HttpSession::proto_map_t & HttpSession::proto_map()
+        {
+            static proto_map_t g_map;
+            return g_map;
+        }
+
+        void HttpSession::register_proto(
+            std::string const & proto, 
+            register_type func)
+        {
+            proto_map().insert(std::make_pair(proto, func));
+        }
+
+        HttpSession::session_map_t & HttpSession::session_map()
+        {
+            static session_map_t g_map;
+            return g_map;
+        }
+
+        ppbox::dispatch::DispatcherBase * HttpSession::attach(
+            HttpdModule & module, 
+            framework::string::Url & url)
+        {
+            std::string session_id = url.param("session");
+
+            //if (session_id.empty()) {
+            //    return module.dispatch_module().alloc_dispatcher(true);
+            //}
+
+            HttpSession * session = NULL;
+
+            if (!session_id.empty()) {
+                session_map_t::const_iterator iter = session_map().find(session_id);
+                if (iter != session_map().end()) {
+                    session = iter->second;
+                }
+            }
+
+            if (session == NULL) {
+                ppbox::dispatch::DispatcherBase * dispatcher = 
+                    module.dispatch_module().alloc_dispatcher(true);
+                {
+                    std::string proto = url.param("proto");
+                    if (proto.empty()) {
+                        proto = url.param(ppbox::dispatch::param_format);
+                    }
+                    proto_map_t::const_iterator iter = proto_map().find(proto);
+                    if (iter == proto_map().end()) {
+                        if (session_id.empty()) {
+                            return module.dispatch_module().alloc_dispatcher(true);
+                        } else {
+                            session = new HttpSession(*dispatcher, 
+                                boost::bind(&ppbox::dispatch::DispatchModule::free_dispatcher, &module.dispatch_module(), _1));
                         }
-                    } else if (!url_.param("start").empty()) { // 伪HTTP协议
-                        seek_range_.type = ppbox::dispatch::SeekRange::time;
-                        seek_range_.beg = framework::string::parse<boost::uint64_t>(url_.param("start"));
-                    }
-                }
-            }
-
-            if (ec) {
-                make_error(ec);
-                resp(ec, response_data().size());
-                return;
-            }
-
-            dispatcher_ = mgr_.dispatch_module().alloc_dispatcher();
-
-            dispatcher_->async_open(url_, 
-                boost::bind(&HttpSession::handle_open, this,resp, _1));
-        }
-
-        void HttpSession::transfer_response_data(
-            response_type const & resp)
-        {
-            response_head().get_content(std::cout);
-            
-            boost::system::error_code ec;
-                
-            if (response_data().size()) {
-                HttpServer::transfer_response_data(resp);
-            } else {
-                assert(url_.path() == "/play");
-                dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
-                    boost::bind(&HttpSession::handle_play,this, resp, _1));
-            }
-        }
-
-        void HttpSession::on_finish()
-        {
-            LOG_INFO( "[on_finish] dispatcher:"<< dispatcher_);
-        }
-
-        void HttpSession::on_error(
-            boost::system::error_code const & ec)
-        {
-            LOG_INFO("[on_error] dispatcher:" << dispatcher_ << " ec:" << ec.message());
-            boost::system::error_code ec1;
-            if (dispatcher_) {
-                dispatcher_->close(ec1);
-            }
-        }
-
-        char const * format_mine[][2] = {
-            {"flv", "video/x-flv"}, 
-            {"ts", "video/MP2T"}, 
-            {"m3u8", "application/x-mpegURL"},
-        };
-
-        char const * content_type(
-            std::string const & format)
-        {
-            for (size_t i = 0; i < sizeof(format_mine) / sizeof(format_mine[0]); ++i) {
-                if (format == format_mine[i][0]) {
-                    return format_mine[i][1];
-                }
-            }
-            return "video";
-        }
-
-        //Dispatch 线程
-        void HttpSession::handle_open(
-            response_type const & resp,
-            boost::system::error_code const & ec)
-        {
-            LOG_INFO( "[handle_open] dispatcher:" << dispatcher_ << " ec:" << ec.message());
-
-            boost::system::error_code ec1 = ec;
-            std::string option = url_.path();
-
-            ppbox::data::MediaInfo info;
-
-            if (!ec1) {
-                if (option == "/play") {
-                    if (url_.param("chunked") == "true") {
-                        response_head()["Transfer-Encoding"]="{chunked}";
-                    }
-                    dispatcher_->setup(-1, response_stream(), ec1)
-                        && dispatcher_->get_media_info(info, ec1);
-                }
-            }
-
-            if (ec1) {
-                make_error(ec1);
-                resp(ec1, response_data().size());
-                return;
-            }
-
-            if (option == "/play") {
-                response_head()["Content-Type"] = std::string("{") + content_type(info.format) + "}";
-                if (info.file_size == ppbox::data::invalid_size) {
-                    resp(ec1, Size());
-                } else {
-                    if (seek_range_.type == ppbox::dispatch::SeekRange::byte) {
-                        util::protocol::http_field::ContentRange content_range(info.file_size, seek_range_.beg, seek_range_.end);
-                        response_head().content_range = content_range;
-                        resp(ec1, Size((size_t)(info.file_size - seek_range_.beg)));
                     } else {
-                        resp(ec1, Size((size_t)info.file_size));
+                        session = iter->second(*dispatcher, 
+                            boost::bind(&ppbox::dispatch::DispatchModule::free_dispatcher, &module.dispatch_module(), _1));
+                        if (session_id.empty()) {
+                            session_id = proto + framework::string::format((long)session);
+                            url.param("session", session_id);
+                        }
                     }
                 }
-            } else {
-                response_head()["Content-Type"]="{application/xml}";
-                if (option == "/mediainfo") {
-                    make_mediainfo(ec1);
-                } else if (option == "/playinfo") {
-                    make_playinfo(ec1);
-                }
-                if (ec1) {
-                    make_error(ec1);
-                }
-                resp(ec1, response_data().size());
+                session->start(url);
+                session_map().insert(std::make_pair(session_id, session));
             }
+
+            return session->attach(url);
         }
 
-        void HttpSession::handle_play(
-            response_type const & resp,
-            boost::system::error_code const & ec)
+        void HttpSession::detach(
+            HttpdModule & module, 
+            ppbox::dispatch::DispatcherBase * dispatcher)
         {
-            LOG_INFO( "[handle_play] ec:"<<ec.message());
-            resp(ec, 0);
+            module.dispatch_module().free_dispatcher(dispatcher);
         }
 
-        void HttpSession::make_error(
-            boost::system::error_code const & ec)
-        {
-
-            response_head().err_code = 500;
-            response_head().err_msg = "Internal Server Error";
-            response_head()["Content-Type"]="{application/xml}";
-
-            util::archive::XmlOArchive<> oa(response_data());
-            oa << ec;
-            oa << SERIALIZATION_NVP_NAME("message", ec.message());
-        }
-
-        void HttpSession::make_mediainfo(
-            boost::system::error_code & ec)
-        {
-            ppbox::data::MediaInfo info;
-            dispatcher_->get_media_info(info, ec);
-            if (!ec) {
-                util::archive::XmlOArchive<> oa(response_data());
-                oa << info;
-            }
-        }
-
-        void HttpSession::make_playinfo(
-            boost::system::error_code& ec)
-        {
-            ppbox::data::MediaInfo info;
-            dispatcher_->get_play_info(info, ec);
-            if (!ec) {
-                util::archive::XmlOArchive<> oa(response_data());
-                oa << info;
-            }
-        }
-
-    } // namespace httpd
+    } // namespace dispatch
 } // namespace ppbox

@@ -15,17 +15,18 @@ namespace ppbox
 
     namespace httpd
     {
-        class HttpSession;
 
-        class HttpManager
-            : public ppbox::common::CommonModuleBase<HttpManager>
-            , public util::protocol::HttpServerManager<HttpSession, HttpManager>
+        class HttpServer;
+
+        class HttpdModule
+            : public ppbox::common::CommonModuleBase<HttpdModule>
+            , public util::protocol::HttpServerManager<HttpServer, HttpdModule>
         {
         public:
-            HttpManager(
+            HttpdModule(
                 util::daemon::Daemon & daemon);
 
-            ~HttpManager();
+            ~HttpdModule();
 
         public:
             virtual boost::system::error_code startup();
@@ -34,7 +35,7 @@ namespace ppbox
 
         public:
             // avoid ambiguous
-            using ppbox::common::CommonModuleBase<HttpManager>::io_svc;
+            using ppbox::common::CommonModuleBase<HttpdModule>::io_svc;
 
             ppbox::dispatch::DispatchModule & dispatch_module()
             {
