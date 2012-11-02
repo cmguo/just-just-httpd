@@ -17,10 +17,12 @@ namespace ppbox
         {
         public:
             M3u8Dispatcher(
-                ppbox::dispatch::DispatcherBase & dispatcher)
-                : SessionDispatcher(dispatcher)
+                SessionDispatcher & dispatcher)
+                : SessionDispatcher(dispatcher, 
+                    boost::bind(&SessionDispatcher::detach, &dispatcher))
                 , sink_(NULL)
             {
+                dispatcher.attach();
             }
 
         public:
@@ -86,41 +88,40 @@ namespace ppbox
 
         static void nop_resp(boost::system::error_code const & ec) {}
 
-        void M3u8Session::start(
-            framework::string::Url const & url)
-        {
-            framework::string::Url url_format;
-            url_format.protocol(url.protocol());
-            url_format.host(url.host());
-            url_format.svc(url.svc());
-            url_format.path("/play.ts");
-            url_format.param("start", "%n");
-            url_format.param("session", url.param("session"));
-            framework::string::Url url1 = url;
-            url1.param("mux.M3u8Protocol.url_format", url_format.to_string());
-            dispatcher_->async_open(url1, nop_resp);
-        }
-
-        void M3u8Session::close()
-        {
-            boost::system::error_code ec;
-            dispatcher_->close(ec);
-            HttpSession::close();
-        }
-
         ppbox::dispatch::DispatcherBase * M3u8Session::attach(
             framework::string::Url & url)
         {
             if (url.param(ppbox::dispatch::param_format) == "ts") {
                 // ·Ö¶ÎÇëÇó
-                return HttpSession::dispatcher_;
+                return HttpSession::attach(url);
             } else {
-                if (url.param("close") == "true") {
-                    close();
+                if (!url_format_.is_valid()) {
+                    url_format_.protocol(url.protocol());
+                    url_format_.host(url.host());
+                    url_format_.svc(url.svc());
+                    url_format_.path("/play.ts");
+                    url_format_.param("start", "%n");
+                    url_format_.param("session", url.param("session"));
                 }
+                url.param("mux.M3u8Protocol.url_format", url_format_.to_string());
+                if (url.param("close") == "true") {
+                    dispatcher_->mark_close();
+                }
+                dispatcher_->attach();
                 return dispatcher_;
             }
         }
+
+        bool M3u8Session::detach(
+            ppbox::dispatch::DispatcherBase * dispatcher)
+        {
+            if (dispatcher == dispatcher_) {
+                dispatcher_->detach();
+                return true;
+            }
+            return HttpSession::detach(dispatcher);
+        }
+
 
     } // namespace dispatch
 } // namespace ppbox

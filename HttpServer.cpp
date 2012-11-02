@@ -8,8 +8,6 @@
 #include <ppbox/dispatch/DispatchModule.h>
 #include <ppbox/dispatch/DispatcherBase.h>
 
-#include <ppbox/data/MediaInfo.h>
-
 #include <ppbox/common/CommonUrl.h>
 
 #include <util/archive/XmlOArchive.h>
@@ -39,6 +37,29 @@ namespace util
             ar & SERIALIZATION_NVP_1(info, duration);
             ar & SERIALIZATION_NVP_1(info, bitrate);
             ar & SERIALIZATION_NVP_1(info, is_live);
+        }
+
+        template <
+            typename Archive
+        >
+        void serialize(
+            Archive & ar, 
+            ppbox::data::PlayRange & range)
+        {
+            ar & SERIALIZATION_NVP_1(range, beg);
+            ar & SERIALIZATION_NVP_1(range, end);
+            ar & SERIALIZATION_NVP_1(range, pos);
+        }
+
+        template <
+            typename Archive
+        >
+        void serialize(
+            Archive & ar, 
+            ppbox::data::PlayInfo & info)
+        {
+            ar & SERIALIZATION_NVP_1(info, byte_range);
+            ar & SERIALIZATION_NVP_1(info, time_range);
         }
 
     }
@@ -130,6 +151,7 @@ namespace ppbox
                 util::protocol::HttpServer::transfer_response_data(resp);
             } else {
                 assert(url_.path() == "/play");
+                //set_non_block(true, ec);
                 dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
                     boost::bind(&HttpServer::handle_play,this, resp, _1));
             }
@@ -256,7 +278,7 @@ namespace ppbox
         void HttpServer::make_playinfo(
             boost::system::error_code& ec)
         {
-            ppbox::data::MediaInfo info;
+            ppbox::data::PlayInfo info;
             dispatcher_->get_play_info(info, ec);
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());

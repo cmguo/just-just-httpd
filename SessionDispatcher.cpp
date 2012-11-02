@@ -54,20 +54,13 @@ namespace ppbox
         void nop_deleter(ppbox::dispatch::DispatcherBase & dispatcher) {}
 
         SessionDispatcher::SessionDispatcher(
-            ppbox::dispatch::DispatcherBase & dispatcher)
-            : CustomDispatcher(dispatcher)
-            , nref_(0)
-            , deleter_(nop_deleter)
-        {
-            wrap_sink_= new WrapSink(dispatcher.io_svc());
-        }
-
-        SessionDispatcher::SessionDispatcher(
             ppbox::dispatch::DispatcherBase & dispatcher, 
             delete_t deleter)
             : CustomDispatcher(dispatcher)
             , nref_(0)
             , deleter_(deleter)
+            , open_start_(false)
+            , timer_(io_svc())
         {
             wrap_sink_= new WrapSink(dispatcher.io_svc());
         }
@@ -77,21 +70,43 @@ namespace ppbox
             delete wrap_sink_;
         }
 
+        void SessionDispatcher::attach()
+        {
+            ++nref_;
+        }
+
+        void SessionDispatcher::detach()
+        {
+            if (--nref_ == 0) {
+                CustomDispatcher::close(last_ec_);
+                deleter_(dispatcher_);
+                delete this;
+            }
+        }
+
+        void SessionDispatcher::mark_close()
+        {
+            last_ec_ = boost::asio::error::operation_aborted;
+            boost::system::error_code ec;
+            timer_.cancel(ec);
+        }
+
         void SessionDispatcher::async_open(
             framework::string::Url const & url, 
             ppbox::dispatch::response_t const & resp)
         {
-            if (nref_ == 0) {
-                ++nref_;
+            if (!open_start_) {
+                attach();
                 CustomDispatcher::async_open(url, 
                     boost::bind(&SessionDispatcher::handle_open, this, _1));
+                open_start_ = true;
+                open_resps_.push_back(resp);
             } else if (open_resps_.empty()) {
-                ++nref_;
                 io_svc().post(boost::bind(resp, last_ec_));
                 return;
+            } else {
+                open_resps_.push_back(resp);
             }
-            ++nref_;
-            open_resps_.push_back(resp);
         }
 
         bool SessionDispatcher::setup(
@@ -127,10 +142,8 @@ namespace ppbox
         bool SessionDispatcher::close(
             boost::system::error_code & ec)
         {
-            if (--nref_ == 0) {
-                CustomDispatcher::close(ec);
-                deleter_(dispatcher_);
-                delete this;
+            if (nref_ == 1 && !open_resps_.empty()) {
+                CustomDispatcher::cancel(ec);
                 return !ec;
             } else {
                 ec.clear();
@@ -145,15 +158,12 @@ namespace ppbox
             if (!last_ec_) {
                 CustomDispatcher::setup(-1, *wrap_sink_, last_ec_);
             }
-            size_t nref = --nref_;
             std::vector<ppbox::dispatch::response_t> open_resps;
             open_resps.swap(open_resps_);
             for (size_t i = 0; i < open_resps.size(); ++i) {
                 open_resps[i](last_ec_);
             }
-            if (nref == 0) {
-                delete this;
-            }
+            handle_timer(ec);
         }
 
         void SessionDispatcher::handle_seek(
@@ -169,6 +179,19 @@ namespace ppbox
                 boost::system::error_code ec1;
                 CustomDispatcher::resume(ec1);
             }
+        }
+
+        void SessionDispatcher::handle_timer(
+            boost::system::error_code const & ec)
+        {
+            ppbox::data::PlayInfo info;
+            if (!last_ec_ && CustomDispatcher::get_play_info(info, last_ec_)) {
+                attach();
+                timer_.expires_from_now(framework::timer::Duration::seconds(5));
+                timer_.async_wait(
+                    boost::bind(&SessionDispatcher::handle_timer, this, _1));
+            }
+            detach();
         }
 
 

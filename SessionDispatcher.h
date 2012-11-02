@@ -5,6 +5,10 @@
 
 #include <ppbox/dispatch/CustomDispatcher.h>
 
+#include <framework/timer/ClockTime.h>
+
+#include <boost/asio/deadline_timer.hpp>
+
 namespace ppbox
 {
     namespace httpd
@@ -22,13 +26,17 @@ namespace ppbox
 
         public:
             SessionDispatcher(
-                ppbox::dispatch::DispatcherBase & dispatcher);
-
-            SessionDispatcher(
                 ppbox::dispatch::DispatcherBase & dispatcher, 
                 delete_t deleter);
 
             virtual ~SessionDispatcher();
+
+        public:
+            void attach();
+
+            void detach();
+
+            void mark_close();
 
         public:
             virtual void async_open(
@@ -57,13 +65,20 @@ namespace ppbox
                 util::stream::Sink * sink, 
                 boost::system::error_code const & ec);
 
+            void handle_timer(
+                boost::system::error_code const & ec);
+
         private:
             size_t nref_;
             std::vector<ppbox::dispatch::response_t> open_resps_;
             delete_t deleter_;
+            bool open_start_;
             WrapSink * wrap_sink_;
             util::stream::Sink * sink_;
             boost::system::error_code last_ec_;
+            typedef boost::asio::basic_deadline_timer<
+                framework::timer::ClockTime> timer_t;
+            timer_t timer_;
         };
 
     } // namespace httpd

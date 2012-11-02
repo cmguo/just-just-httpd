@@ -56,14 +56,11 @@ namespace ppbox
             virtual ~HttpSession();
 
         public:
-            virtual void start(
-                framework::string::Url const & url);
-
-            virtual void close();
-
-        public:
             virtual ppbox::dispatch::DispatcherBase * attach(
                 framework::string::Url & url);
+
+            virtual bool detach(
+                ppbox::dispatch::DispatcherBase * dispatcher);
 
         private:
             void delete_dispatcher(

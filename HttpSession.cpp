@@ -34,25 +34,25 @@ namespace ppbox
 
         static void nop_resp(boost::system::error_code const & ec) {}
 
-        void HttpSession::start(
-            framework::string::Url const & url)
-        {
-            dispatcher_->async_open(url, nop_resp);
-        }
-
-        void HttpSession::close()
-        {
-            boost::system::error_code ec;
-            dispatcher_->close(ec);
-        }
-
         ppbox::dispatch::DispatcherBase * HttpSession::attach(
             framework::string::Url & url)
         {
+            url.param("dispatch.fast", "true");
             if (url.param("close") == "true") {
-                close();
+                dispatcher_->mark_close();
             }
+            dispatcher_->attach();
             return dispatcher_;
+        }
+
+        bool HttpSession::detach(
+            ppbox::dispatch::DispatcherBase * dispatcher)
+        {
+            if (dispatcher == dispatcher_) {
+                dispatcher_->detach();
+                return true;
+            }
+            return false;
         }
 
         void HttpSession::delete_dispatcher(
@@ -145,7 +145,6 @@ namespace ppbox
                         }
                     }
                 }
-                session->start(url);
                 session_map().insert(std::make_pair(session_id, session));
             }
 
@@ -156,7 +155,28 @@ namespace ppbox
             HttpdModule & module, 
             ppbox::dispatch::DispatcherBase * dispatcher)
         {
-            module.dispatch_module().free_dispatcher(dispatcher);
+            struct find_call_detach
+            {
+                find_call_detach(
+                    ppbox::dispatch::DispatcherBase *& dispatcher) 
+                    : dispatcher_(dispatcher)
+                {
+                }
+
+                bool operator()(
+                    session_map_t::value_type const & v)
+                {
+                    return v.second->detach(dispatcher_);
+                }
+
+            private:
+                ppbox::dispatch::DispatcherBase *& dispatcher_;
+            } finder(dispatcher);
+
+            if (session_map().end() ==
+                std::find_if(session_map().begin(), session_map().end(), finder)) {
+                    module.dispatch_module().free_dispatcher(dispatcher);
+            }
         }
 
     } // namespace dispatch

@@ -23,17 +23,15 @@ namespace ppbox
             virtual ~M3u8Session();
 
         public:
-            virtual void start(
-                framework::string::Url const & url);
-
-            virtual void close();
-
-        public:
             virtual ppbox::dispatch::DispatcherBase * attach(
                 framework::string::Url & url);
 
+            virtual bool detach(
+                ppbox::dispatch::DispatcherBase * dispatcher);
+
         protected:
             M3u8Dispatcher * dispatcher_;
+            framework::string::Url url_format_;
         };
 
         PPBOX_REGISTER_HTTPD_PROTO(m3u8, M3u8Session);
