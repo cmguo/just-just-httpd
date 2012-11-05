@@ -53,10 +53,7 @@ PROJECT_LINK_FLAGS		:= $(PROJECT_LINK_FLAGS)
 ## 该项目依赖的其他项目
 
 PROJECT_DEPENDS			:= \
-				/ppbox/mux \
-				/ppbox/vod \
-				/ppbox/peer \
-				/base/tinyxml \
+				/ppbox/dispatch \
 				$(PROJECT_DEPENDS)
 
 ## 该项目特定的引用库
