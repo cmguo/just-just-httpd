@@ -84,6 +84,10 @@ namespace ppbox
 
             typedef std::map<std::string, HttpSession *> session_map_t;
 
+            struct find_by_session;
+
+            struct find_call_detach;
+
             static proto_map_t & proto_map();
 
             static session_map_t & session_map();

@@ -13,6 +13,8 @@
 #include <framework/logger/StreamRecord.h>
 using namespace framework::logger;
 
+#include <algorithm>
+
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpSession", framework::logger::Debug);
 
 namespace ppbox
@@ -31,8 +33,6 @@ namespace ppbox
         HttpSession::~HttpSession()
         {
         }
-
-        static void nop_resp(boost::system::error_code const & ec) {}
 
         ppbox::dispatch::DispatcherBase * HttpSession::attach(
             framework::string::Url & url)
@@ -55,28 +55,29 @@ namespace ppbox
             return false;
         }
 
+        struct HttpSession::find_by_session
+        {
+            find_by_session(
+                HttpSession * session) 
+                : session_(session)
+            {
+            }
+
+            bool operator()(
+                session_map_t::value_type const & v)
+            {
+                return v.second == session_;
+            }
+
+        private:
+            HttpSession * session_;
+        };
+
         void HttpSession::delete_dispatcher(
             delete_t deleter, 
             ppbox::dispatch::DispatcherBase & dispatcher)
         {
-            struct find_by_session
-            {
-                find_by_session(
-                    HttpSession * session) 
-                    : session_(session)
-                {
-                }
-
-                bool operator()(
-                    session_map_t::value_type const & v)
-                {
-                    return v.second == session_;
-                }
-
-            private:
-                HttpSession * session_;
-            } finder(this);
-
+            find_by_session finder(this);
             deleter(&dispatcher);
             session_map().erase(std::find_if(session_map().begin(), session_map().end(), finder));
             delete this;
@@ -151,28 +152,29 @@ namespace ppbox
             return session->attach(url);
         }
 
+        struct HttpSession::find_call_detach
+        {
+            find_call_detach(
+                ppbox::dispatch::DispatcherBase *& dispatcher) 
+                : dispatcher_(dispatcher)
+            {
+            }
+
+            bool operator()(
+                session_map_t::value_type const & v) const
+            {
+                return v.second->detach(dispatcher_);
+            }
+
+        private:
+            ppbox::dispatch::DispatcherBase *& dispatcher_;
+        };
+
         void HttpSession::detach(
             HttpdModule & module, 
             ppbox::dispatch::DispatcherBase * dispatcher)
         {
-            struct find_call_detach
-            {
-                find_call_detach(
-                    ppbox::dispatch::DispatcherBase *& dispatcher) 
-                    : dispatcher_(dispatcher)
-                {
-                }
-
-                bool operator()(
-                    session_map_t::value_type const & v)
-                {
-                    return v.second->detach(dispatcher_);
-                }
-
-            private:
-                ppbox::dispatch::DispatcherBase *& dispatcher_;
-            } finder(dispatcher);
-
+            find_call_detach finder(dispatcher);
             if (session_map().end() ==
                 std::find_if(session_map().begin(), session_map().end(), finder)) {
                     module.dispatch_module().free_dispatcher(dispatcher);

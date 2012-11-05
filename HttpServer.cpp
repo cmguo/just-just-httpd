@@ -4,14 +4,15 @@
 #include "ppbox/httpd/HttpServer.h"
 #include "ppbox/httpd/HttpdModule.h"
 #include "ppbox/httpd/HttpSession.h"
+#include "ppbox/httpd/Serialize.h"
 
 #include <ppbox/dispatch/DispatchModule.h>
 #include <ppbox/dispatch/DispatcherBase.h>
 
 #include <ppbox/common/CommonUrl.h>
 
-#include <util/archive/XmlOArchive.h>
 #include <util/serialization/ErrorCode.h>
+#include <util/archive/XmlOArchive.h>
 using namespace util::protocol;
 
 #include <framework/logger/Logger.h>
@@ -20,50 +21,6 @@ using namespace util::protocol;
 #include <boost/bind.hpp>
 
 FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpServer", framework::logger::Debug);
-
-namespace util
-{
-    namespace serialization
-    {
-
-        template <
-            typename Archive
-        >
-        void serialize(
-            Archive & ar, 
-            ppbox::data::MediaInfo & info)
-        {
-            ar & SERIALIZATION_NVP_1(info, file_size);
-            ar & SERIALIZATION_NVP_1(info, duration);
-            ar & SERIALIZATION_NVP_1(info, bitrate);
-            ar & SERIALIZATION_NVP_1(info, is_live);
-        }
-
-        template <
-            typename Archive
-        >
-        void serialize(
-            Archive & ar, 
-            ppbox::data::PlayRange & range)
-        {
-            ar & SERIALIZATION_NVP_1(range, beg);
-            ar & SERIALIZATION_NVP_1(range, end);
-            ar & SERIALIZATION_NVP_1(range, pos);
-        }
-
-        template <
-            typename Archive
-        >
-        void serialize(
-            Archive & ar, 
-            ppbox::data::PlayInfo & info)
-        {
-            ar & SERIALIZATION_NVP_1(info, byte_range);
-            ar & SERIALIZATION_NVP_1(info, time_range);
-        }
-
-    }
-}
 
 namespace ppbox
 {
