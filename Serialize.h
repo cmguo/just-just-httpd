@@ -21,7 +21,7 @@ namespace util
             ar & SERIALIZATION_NVP_1(info, file_size);
             ar & SERIALIZATION_NVP_1(info, duration);
             ar & SERIALIZATION_NVP_1(info, bitrate);
-            ar & SERIALIZATION_NVP_1(info, is_live);
+            ar & SERIALIZATION_NVP_1(info, type);
         }
 
         template <
