@@ -2,7 +2,8 @@
 
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/M3u8Session.h"
-#include "ppbox/httpd/SessionDispatcher.h"
+
+#include <ppbox/dispatch/CustomDispatcher.h>
 
 #include <boost/asio/write.hpp>
 #include <boost/bind.hpp>
@@ -85,8 +86,6 @@ namespace ppbox
         M3u8Session::~M3u8Session()
         {
         }
-
-        static void nop_resp(boost::system::error_code const & ec) {}
 
         void M3u8Session::attach(
             framework::string::Url & url, 
