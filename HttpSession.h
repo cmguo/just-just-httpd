@@ -3,97 +3,40 @@
 #ifndef _PPBOX_HTTPD_HTTP_SESSION_H_
 #define _PPBOX_HTTPD_HTTP_SESSION_H_
 
-#include <ppbox/common/Call.h>
-#include <ppbox/common/Create.h>
+#include <ppbox/dispatch/DispatchBase.h>
 
-#include <framework/string/Url.h>
-
-#define PPBOX_REGISTER_HTTPD_PROTO(n, c) \
-    static ppbox::common::Call reg_ ## c(ppbox::httpd::HttpSession::register_proto, #n, ppbox::common::Creator<c>())
-
+#include <ppbox/common/ClassFactory.h>
 
 namespace ppbox
 {
-    namespace dispatch
-    {
-        class DispatcherBase;
-    }
-
     namespace httpd
     {
 
-        class HttpdModule;
-        class SessionDispatcher;
-
-        /* 
-            利用dispatch模块SharedDispatcher提供的会话管理功能。
-            HttpSession在SessionManager中保持一个会话，使SessionManager不会关闭相应的SessionGroup
-            HttpSession可以补充省略的playlink、format等参数
-        */
-
         class HttpSession
+            : public ppbox::common::ClassFactory<
+                HttpSession, 
+                std::string, 
+                HttpSession * (void)
+            >
         {
         public:
-            typedef boost::function<
-                void (ppbox::dispatch::DispatcherBase *)
-            > delete_t;
-
-            typedef boost::function<HttpSession * (
-                ppbox::dispatch::DispatcherBase &, 
-                delete_t)
-            > register_type;
-
-        public:
-            static void register_proto(
-                std::string const & proto, 
-                register_type func);
-
-        public:
-            HttpSession(
-                ppbox::dispatch::DispatcherBase & dispatcher, 
-                delete_t deleter);
+            HttpSession();
 
             virtual ~HttpSession();
 
         public:
-            virtual ppbox::dispatch::DispatcherBase * attach(
-                framework::string::Url & url);
+            virtual void attach(
+                framework::string::Url & url, 
+                ppbox::dispatch::DispatcherBase *& dispatcher);
 
             virtual bool detach(
-                ppbox::dispatch::DispatcherBase * dispatcher);
-
-        private:
-            void delete_dispatcher(
-                delete_t deleter, 
-                ppbox::dispatch::DispatcherBase & dispatcher);
-
-        public:
-            static ppbox::dispatch::DispatcherBase * attach(
-                HttpdModule & module, 
-                framework::string::Url & url);
-
-            static void detach(
-                HttpdModule & module, 
-                ppbox::dispatch::DispatcherBase * dispatcher);
-
-        protected:
-            SessionDispatcher * dispatcher_;
-
-        private:
-            typedef std::map<std::string, register_type> proto_map_t;
-
-            typedef std::map<std::string, HttpSession *> session_map_t;
-
-            struct find_by_session;
-
-            struct find_call_detach;
-
-            static proto_map_t & proto_map();
-
-            static session_map_t & session_map();
+                framework::string::Url const & url, 
+                ppbox::dispatch::DispatcherBase *& dispatcher);
         };
 
     } // namespace dispatch
 } // namespace ppbox
+
+#define PPBOX_REGISTER_HTTP_SESSION(k, c) PPBOX_REGISTER_CLASS(k, c)
 
 #endif // _PPBOX_HTTPD_M3U8_SESSION_H_

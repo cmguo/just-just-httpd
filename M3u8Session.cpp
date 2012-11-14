@@ -13,16 +13,14 @@ namespace ppbox
     {
 
         class M3u8Dispatcher
-            : public SessionDispatcher
+            : public ppbox::dispatch::CustomDispatcher
         {
         public:
             M3u8Dispatcher(
-                SessionDispatcher & dispatcher)
-                : SessionDispatcher(dispatcher, 
-                    boost::bind(&SessionDispatcher::detach, &dispatcher))
+                ppbox::dispatch::DispatcherBase & dispatcher)
+                : ppbox::dispatch::CustomDispatcher(dispatcher)
                 , sink_(NULL)
             {
-                dispatcher.attach();
             }
 
         public:
@@ -61,7 +59,7 @@ namespace ppbox
                 ppbox::data::MediaInfo & info, 
                 boost::system::error_code & ec)
             {
-                if (SessionDispatcher::get_media_info(info, ec)) {
+                if (CustomDispatcher::get_media_info(info, ec)) {
                     info.file_size = info.format_data.size();
                     info.format = "m3u8";
                     return true;
@@ -69,17 +67,19 @@ namespace ppbox
                 return false;
             }
 
+        public:
+            ppbox::dispatch::DispatcherBase & dispatcher()
+            {
+                return dispatcher_;
+            }
+
         private:
             util::stream::Sink * sink_;
             std::string m3u8_content_;
         };
 
-        M3u8Session::M3u8Session(
-            ppbox::dispatch::DispatcherBase & dispatcher, 
-            delete_t deleter)
-            : HttpSession(dispatcher, deleter)
+        M3u8Session::M3u8Session()
         {
-            dispatcher_ = new M3u8Dispatcher(*HttpSession::dispatcher_);
         }
 
         M3u8Session::~M3u8Session()
@@ -88,12 +88,13 @@ namespace ppbox
 
         static void nop_resp(boost::system::error_code const & ec) {}
 
-        ppbox::dispatch::DispatcherBase * M3u8Session::attach(
-            framework::string::Url & url)
+        void M3u8Session::attach(
+            framework::string::Url & url, 
+            ppbox::dispatch::DispatcherBase *& dispatcher)
         {
             if (url.param(ppbox::dispatch::param_format) == "ts") {
                 // ·Ö¶ÎÇëÇó
-                return HttpSession::attach(url);
+                HttpSession::attach(url, dispatcher);
             } else {
                 if (!url_format_.is_valid()) {
                     url_format_.protocol(url.protocol());
@@ -104,24 +105,23 @@ namespace ppbox
                     url_format_.param("session", url.param("session"));
                 }
                 url.param("mux.M3u8Protocol.url_format", url_format_.to_string());
-                if (url.param("close") == "true") {
-                    dispatcher_->mark_close();
-                }
-                dispatcher_->attach();
-                return dispatcher_;
+                dispatcher = new M3u8Dispatcher(*dispatcher);
             }
         }
 
         bool M3u8Session::detach(
-            ppbox::dispatch::DispatcherBase * dispatcher)
+            framework::string::Url const & url, 
+            ppbox::dispatch::DispatcherBase *& dispatcher)
         {
-            if (dispatcher == dispatcher_) {
-                dispatcher_->detach();
+            if (url.param(ppbox::dispatch::param_format) == "ts") {
+                return HttpSession::detach(url, dispatcher);
+            } else {
+                M3u8Dispatcher * m3u8_dispatcher = (M3u8Dispatcher *)dispatcher;
+                dispatcher = &m3u8_dispatcher->dispatcher();
+                delete m3u8_dispatcher;
                 return true;
             }
-            return HttpSession::detach(dispatcher);
         }
-
 
     } // namespace dispatch
 } // namespace ppbox

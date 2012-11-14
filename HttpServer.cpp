@@ -39,7 +39,7 @@ namespace ppbox
         {
             if (dispatcher_) {
                 //mgr_.dispatch_module().free_dispatcher(dispatcher_);
-                HttpSession::detach(mgr_, dispatcher_);
+                mgr_.detach(url_, dispatcher_);
             }
         }
 
@@ -55,10 +55,11 @@ namespace ppbox
             url_.from_string("http://" + request_head().host.get_value_or(peer_addr) + request_head().path);
 
             boost::system::error_code ec;
-            ppbox::common::decode_url(url_, ec)
-                && mgr_.dispatch_module().normalize_url(url_, ec);
+            ppbox::common::decode_url(url_, ec);
 
             if (!ec) {
+                dispatcher_ = mgr_.attach(url_);
+
                 std::string option = url_.path();
                 if (option != "/mediainfo"
                     && option != "/playinfo"
@@ -89,9 +90,6 @@ namespace ppbox
                 resp(ec, response_data().size());
                 return;
             }
-
-            //dispatcher_ = mgr_.dispatch_module().alloc_dispatcher();
-            dispatcher_ = HttpSession::attach(mgr_, url_);
 
             dispatcher_->async_open(url_, 
                 boost::bind(&HttpServer::handle_open, this,resp, _1));

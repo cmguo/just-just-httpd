@@ -1,9 +1,12 @@
-// HttpServer.h
+// HttpdModule.h
 
-#ifndef _PPBOX_HTTPD_HTTP_MANAGER_H_
-#define _PPBOX_HTTPD_HTTP_MANAGER_H_
+#ifndef _PPBOX_HTTPD_HTTPD_MANAGER_H_
+#define _PPBOX_HTTPD_HTTPD_MANAGER_H_
+
+#include <ppbox/dispatch/DispatchBase.h>
 
 #include <ppbox/common/CommonModuleBase.h>
+
 #include <util/protocol/http/HttpServerManager.h>
 
 namespace ppbox
@@ -17,6 +20,7 @@ namespace ppbox
     {
 
         class HttpServer;
+        class HttpSession;
 
         class HttpdModule
             : public ppbox::common::CommonModuleBase<HttpdModule>
@@ -37,17 +41,27 @@ namespace ppbox
             // avoid ambiguous
             using ppbox::common::CommonModuleBase<HttpdModule>::io_svc;
 
-            ppbox::dispatch::DispatchModule & dispatch_module()
-            {
-                return dispatch_module_;
-            }
+        public:
+            ppbox::dispatch::DispatcherBase * attach(
+                framework::string::Url & url);
+
+            void detach(
+                framework::string::Url const & url, 
+                ppbox::dispatch::DispatcherBase * dispatcher);
 
         private:
             framework::network::NetName addr_;
             ppbox::dispatch::DispatchModule & dispatch_module_;
+
+        private:
+            struct find_by_session;
+            struct find_call_detach;
+
+            typedef std::map<std::string, HttpSession *> session_map_t;
+            static session_map_t & session_map();
         };
 
     } // namespace httpd
 } // namespace ppbox
 
-#endif // _PPBOX_HTTPD_HTTP_MANAGER_H_
+#endif // _PPBOX_HTTPD_HTTPD_MANAGER_H_
