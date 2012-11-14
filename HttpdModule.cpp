@@ -109,8 +109,10 @@ namespace ppbox
                         url.param("session", session_id);
                     }
                     session_map().insert(std::make_pair(session_id, session));
-                    session->attach(url, dispatcher); // 具体的协议可以指定自定义的dispatcher
                 }
+            }
+            if (session != NULL) {
+                session->attach(url, dispatcher); // 具体的协议可以指定自定义的dispatcher
             }
             return dispatcher;
         }

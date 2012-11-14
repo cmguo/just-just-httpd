@@ -91,9 +91,9 @@ namespace ppbox
             framework::string::Url & url, 
             ppbox::dispatch::DispatcherBase *& dispatcher)
         {
+            HttpSession::attach(url, dispatcher);
             if (url.param(ppbox::dispatch::param_format) == "ts") {
                 // ·Ö¶ÎÇëÇó
-                HttpSession::attach(url, dispatcher);
             } else {
                 if (!url_format_.is_valid()) {
                     url_format_.protocol(url.protocol());
@@ -118,6 +118,7 @@ namespace ppbox
                 M3u8Dispatcher * m3u8_dispatcher = (M3u8Dispatcher *)dispatcher;
                 dispatcher = &m3u8_dispatcher->dispatcher();
                 delete m3u8_dispatcher;
+                HttpSession::detach(url, dispatcher);
                 return true;
             }
         }
