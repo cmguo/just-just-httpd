@@ -25,6 +25,11 @@ namespace ppbox
             virtual ~HttpSession();
 
         public:
+            void close();
+
+            bool empty() const;
+
+        public:
             virtual void attach(
                 framework::string::Url & url, 
                 ppbox::dispatch::DispatcherBase *& dispatcher);
@@ -32,6 +37,14 @@ namespace ppbox
             virtual bool detach(
                 framework::string::Url const & url, 
                 ppbox::dispatch::DispatcherBase *& dispatcher);
+
+        protected:
+            void attach();
+
+            void detach();
+
+        private:
+            size_t nref_;
         };
 
     } // namespace dispatch

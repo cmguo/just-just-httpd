@@ -37,10 +37,7 @@ namespace ppbox
 
         HttpServer::~HttpServer()
         {
-            if (dispatcher_) {
-                //mgr_.dispatch_module().free_dispatcher(dispatcher_);
-                mgr_.detach(url_, dispatcher_);
-            }
+            assert(dispatcher_ == NULL);
         }
 
         void HttpServer::local_process(response_type const & resp)
@@ -106,7 +103,7 @@ namespace ppbox
                 util::protocol::HttpServer::transfer_response_data(resp);
             } else {
                 assert(url_.path() == "/play");
-                //set_non_block(true, ec);
+                set_non_block(true, ec);
                 dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
                     boost::bind(&HttpServer::handle_play,this, resp, _1));
             }
@@ -115,6 +112,10 @@ namespace ppbox
         void HttpServer::on_finish()
         {
             LOG_INFO( "[on_finish] dispatcher:"<< dispatcher_);
+            if (dispatcher_) {
+                mgr_.detach(url_, dispatcher_);
+                dispatcher_ = NULL;
+            }
         }
 
         void HttpServer::on_error(

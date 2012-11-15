@@ -18,8 +18,10 @@ namespace ppbox
         {
         public:
             M3u8Dispatcher(
+                M3u8Session const & session, 
                 ppbox::dispatch::DispatcherBase & dispatcher)
                 : ppbox::dispatch::CustomDispatcher(dispatcher)
+                , session_(session)
                 , sink_(NULL)
             {
             }
@@ -74,7 +76,13 @@ namespace ppbox
                 return dispatcher_;
             }
 
+            M3u8Session const & session() const
+            {
+                return session_;
+            }
+
         private:
+            M3u8Session const & session_;
             util::stream::Sink * sink_;
             std::string m3u8_content_;
         };
@@ -92,9 +100,7 @@ namespace ppbox
             ppbox::dispatch::DispatcherBase *& dispatcher)
         {
             HttpSession::attach(url, dispatcher);
-            if (url.param(ppbox::dispatch::param_format) == "ts") {
-                // ·Ö¶ÎÇëÇó
-            } else {
+            if (url.param(ppbox::dispatch::param_format) == "m3u8") {
                 if (!url_format_.is_valid()) {
                     url_format_.protocol(url.protocol());
                     url_format_.host(url.host());
@@ -104,7 +110,8 @@ namespace ppbox
                     url_format_.param("session", url.param("session"));
                 }
                 url.param("mux.M3u8Protocol.url_format", url_format_.to_string());
-                dispatcher = new M3u8Dispatcher(*dispatcher);
+                dispatcher = new M3u8Dispatcher(*this, *dispatcher);
+                HttpSession::attach();
             }
         }
 
@@ -112,15 +119,17 @@ namespace ppbox
             framework::string::Url const & url, 
             ppbox::dispatch::DispatcherBase *& dispatcher)
         {
-            if (url.param(ppbox::dispatch::param_format) == "ts") {
-                return HttpSession::detach(url, dispatcher);
-            } else {
+            bool is_mine = false;
+            if (url.param(ppbox::dispatch::param_format) == "m3u8") {
                 M3u8Dispatcher * m3u8_dispatcher = (M3u8Dispatcher *)dispatcher;
-                dispatcher = &m3u8_dispatcher->dispatcher();
-                delete m3u8_dispatcher;
-                HttpSession::detach(url, dispatcher);
-                return true;
+                if (&m3u8_dispatcher->session() == this) {
+                    dispatcher = &m3u8_dispatcher->dispatcher();
+                    delete m3u8_dispatcher;
+                    HttpSession::detach();
+                    is_mine = true;
+                }
             }
+            return HttpSession::detach(url, dispatcher) || is_mine;
         }
 
     } // namespace dispatch

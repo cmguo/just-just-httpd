@@ -14,6 +14,7 @@ namespace ppbox
     {
 
         HttpSession::HttpSession()
+            : nref_(1)
         {
         }
 
@@ -21,11 +22,20 @@ namespace ppbox
         {
         }
 
+        void HttpSession::close()
+        {
+            --nref_;
+        }
+
+        bool HttpSession::empty() const
+        {
+            return nref_ == 0;
+        }
+
         void HttpSession::attach(
-            framework::string::Url & url, 
+                framework::string::Url & url, 
             ppbox::dispatch::DispatcherBase *& dispatcher)
         {
-            url.param("dispatch.fast", "true");
         }
 
         bool HttpSession::detach(
@@ -33,6 +43,16 @@ namespace ppbox
             ppbox::dispatch::DispatcherBase *& dispatcher)
         {
             return false;
+        }
+
+        void HttpSession::attach()
+        {
+            ++nref_;
+        }
+
+        void HttpSession::detach()
+        {
+            --nref_;
         }
 
     } // namespace dispatch

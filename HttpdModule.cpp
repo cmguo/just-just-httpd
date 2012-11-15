@@ -44,6 +44,12 @@ namespace ppbox
         void HttpdModule::shutdown()
         {
             stop();
+            session_map_t::iterator iter = session_map().begin();
+            for (; iter != session_map().end(); ++iter) {
+                delete iter->second;
+                iter->second = NULL;
+            }
+            session_map().clear();
         }
 
         struct HttpdModule::find_call_detach
@@ -78,16 +84,18 @@ namespace ppbox
         {
             boost::system::error_code ec;
             dispatch_module_.normalize_url(url, ec);
+            url.param("dispatch.fast", "true");
 
             std::string session_id = url.param("session");
-
-            //if (session_id.empty()) {
-            //    return module.dispatch_module().alloc_dispatcher(true);
-            //}
+            bool close = false;
 
             HttpSession * session = NULL;
 
             if (!session_id.empty()) {
+                if (session_id.compare(0, 5, "close") == 0) {
+                    close = true;
+                    session_id = session_id.substr(5);
+                }
                 session_map_t::const_iterator iter = session_map().find(session_id);
                 if (iter != session_map().end()) {
                     session = iter->second;
@@ -113,6 +121,13 @@ namespace ppbox
             }
             if (session != NULL) {
                 session->attach(url, dispatcher); // 具体的协议可以指定自定义的dispatcher
+                if (close) {
+                    session->close();
+                    if (session->empty()) {
+                        session_map().erase(session_id);
+                        delete session;
+                    }
+                }
             }
             return dispatcher;
         }
@@ -121,7 +136,13 @@ namespace ppbox
             framework::string::Url const & url, 
             ppbox::dispatch::DispatcherBase * dispatcher)
         {
-            std::find_if(session_map().begin(), session_map().end(), find_call_detach(url, dispatcher));
+            session_map_t::iterator iter = 
+                std::find_if(session_map().begin(), session_map().end(), find_call_detach(url, dispatcher));
+            if (iter != session_map().end() && iter->second->empty()) {
+                HttpSession * session = iter->second;
+                session_map().erase(iter);
+                delete session;
+            }
             dispatch_module_.free_dispatcher(dispatcher);
         }
 
