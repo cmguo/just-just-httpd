@@ -75,8 +75,8 @@ namespace ppbox
                         seek_range_.beg = unit.begin();
                         if (unit.has_end()) {
                             seek_range_.end = unit.end();
-                        } else if (unit.begin() == 0) {
-                            seek_range_.type = ppbox::dispatch::SeekRange::none;
+                        //} else if (unit.begin() == 0) {
+                        //    seek_range_.type = ppbox::dispatch::SeekRange::none;
                         }
                     }
                 }
@@ -180,6 +180,7 @@ namespace ppbox
                 } else {
                     if (seek_range_.type == ppbox::dispatch::SeekRange::byte) {
                         util::protocol::http_field::ContentRange content_range(info.file_size, seek_range_.beg, seek_range_.end);
+                        response_head().err_code = util::protocol::http_error::partial_content;
                         response_head().content_range = content_range;
                         resp(ec1, Size((size_t)(info.file_size - seek_range_.beg)));
                     } else {
