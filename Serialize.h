@@ -1,7 +1,7 @@
 // Serialize.h
 
-#include <ppbox/data/MediaInfo.h>
-#include <ppbox/data/PlayInfo.h>
+#include <ppbox/data/base/MediaInfo.h>
+#include <ppbox/data/base/PlayInfo.h>
 
 #include <util/serialization/Serialization.h>
 #include <util/serialization/NVPair.h>
