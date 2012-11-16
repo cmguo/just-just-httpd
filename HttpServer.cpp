@@ -131,6 +131,8 @@ namespace ppbox
         char const * format_mine[][2] = {
             {"flv", "video/x-flv"}, 
             {"ts", "video/MP2T"}, 
+            {"mp4", "video/mp4"}, 
+            {"asf", "video/x-ms-asf"}, 
             {"m3u8", "application/x-mpegURL"},
         };
 
