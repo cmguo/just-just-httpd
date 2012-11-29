@@ -1,7 +1,7 @@
 // Serialize.h
 
 #include <ppbox/data/base/MediaInfo.h>
-#include <ppbox/data/base/PlayInfo.h>
+#include <ppbox/data/base/StreamStatus.h>
 
 #include <util/serialization/Serialization.h>
 #include <util/serialization/NVPair.h>
@@ -29,11 +29,12 @@ namespace util
         >
         void serialize(
             Archive & ar, 
-            ppbox::data::PlayRange & range)
+            ppbox::data::StreamRange & range)
         {
             ar & SERIALIZATION_NVP_1(range, beg);
             ar & SERIALIZATION_NVP_1(range, end);
             ar & SERIALIZATION_NVP_1(range, pos);
+            ar & SERIALIZATION_NVP_1(range, buf);
         }
 
         template <
@@ -41,10 +42,11 @@ namespace util
         >
         void serialize(
             Archive & ar, 
-            ppbox::data::PlayInfo & info)
+            ppbox::data::StreamStatus & info)
         {
             ar & SERIALIZATION_NVP_1(info, byte_range);
             ar & SERIALIZATION_NVP_1(info, time_range);
+            ar & SERIALIZATION_NVP_1(info, buf_ec);
         }
 
     }

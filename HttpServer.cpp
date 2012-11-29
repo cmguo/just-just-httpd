@@ -237,8 +237,8 @@ namespace ppbox
         void HttpServer::make_playinfo(
             boost::system::error_code& ec)
         {
-            ppbox::data::PlayInfo info;
-            dispatcher_->get_play_info(info, ec);
+            ppbox::data::StreamStatus info;
+            dispatcher_->get_stream_status(info, ec);
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());
                 oa << info;
