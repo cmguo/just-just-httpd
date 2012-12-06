@@ -1,4 +1,4 @@
-// HttpManager.cpp
+// HttpdModule.cpp
 
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/HttpdModule.h"
@@ -26,7 +26,7 @@ namespace ppbox
             , addr_("0.0.0.0:9006")
             , dispatch_module_(util::daemon::use_module<ppbox::dispatch::DispatchModule>(get_daemon()))
         {
-            config().register_module("HttpManager")
+            config().register_module("HttpdModule")
                 << CONFIG_PARAM_NAME_RDWR("addr", addr_);
         }
 

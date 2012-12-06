@@ -113,6 +113,8 @@ namespace ppbox
         {
             LOG_INFO( "[on_finish] dispatcher:"<< dispatcher_);
             if (dispatcher_) {
+                boost::system::error_code ec1;
+                dispatcher_->close(ec1);
                 mgr_.detach(url_, dispatcher_);
                 dispatcher_ = NULL;
             }
@@ -122,8 +124,8 @@ namespace ppbox
             boost::system::error_code const & ec)
         {
             LOG_INFO("[on_error] dispatcher:" << dispatcher_ << " ec:" << ec.message());
-            boost::system::error_code ec1;
             if (dispatcher_) {
+                boost::system::error_code ec1;
                 dispatcher_->close(ec1);
             }
         }
