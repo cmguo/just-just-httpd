@@ -8,6 +8,7 @@
 
 #include <ppbox/dispatch/DispatchModule.h>
 #include <ppbox/dispatch/DispatcherBase.h>
+#include <ppbox/dispatch/Sink.h>
 
 #include <ppbox/common/CommonUrl.h>
 
@@ -32,6 +33,7 @@ namespace ppbox
             : util::protocol::HttpServer(mgr.io_svc())
             , mgr_(mgr)
             , dispatcher_(NULL)
+            , sink_(NULL)
         {
         }
 
@@ -117,6 +119,10 @@ namespace ppbox
                 dispatcher_->close(ec1);
                 mgr_.detach(url_, dispatcher_);
                 dispatcher_ = NULL;
+                if (sink_) {
+                    delete sink_;
+                    sink_ = NULL;
+                }
             }
         }
 
@@ -166,7 +172,8 @@ namespace ppbox
                     if (url_.param("chunked") == "true") {
                         response_head()["Transfer-Encoding"]="{chunked}";
                     }
-                    dispatcher_->setup(-1, response_stream(), ec1)
+                    sink_ = new ppbox::dispatch::WrapSink(response_stream());
+                    dispatcher_->setup(-1, *sink_, ec1)
                         && dispatcher_->get_media_info(info, ec1);
                 }
             }

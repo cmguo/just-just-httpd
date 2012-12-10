@@ -14,6 +14,7 @@ namespace ppbox
     namespace dispatch
     {
         class DispatcherBase;
+        class Sink;
     }
 
     namespace httpd
@@ -63,6 +64,7 @@ namespace ppbox
             HttpdModule & mgr_;
             framework::string::Url url_;
             ppbox::dispatch::DispatcherBase * dispatcher_;
+            ppbox::dispatch::Sink * sink_;
             ppbox::dispatch::SeekRange seek_range_;
         };
 

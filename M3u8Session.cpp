@@ -3,6 +3,7 @@
 #include "ppbox/httpd/Common.h"
 #include "ppbox/httpd/M3u8Session.h"
 
+#include <ppbox/dispatch/Sink.h>
 #include <ppbox/dispatch/CustomDispatcher.h>
 
 #include <boost/asio/write.hpp>
@@ -29,10 +30,10 @@ namespace ppbox
         public:
             virtual bool setup(
                 boost::uint32_t index,      // 流编号
-                util::stream::Sink & sink, 
+                ppbox::dispatch::Sink & sink, 
                 boost::system::error_code & ec)
             {
-                sink_ = &sink;
+                sink_ = (ppbox::dispatch::WrapSink *)&sink;
                 ec.clear();
                 return true;
             }
@@ -50,7 +51,7 @@ namespace ppbox
                     // 但是还是有可能M3u8Dispatcher提前析构
                     m3u8_content_.swap(info.format_data);
                     boost::asio::async_write(
-                        *sink_, 
+                        sink_->sink(), 
                         boost::asio::buffer(m3u8_content_), 
                         boost::bind(resp, _1));
                 } else {
@@ -83,7 +84,7 @@ namespace ppbox
 
         private:
             M3u8Session const & session_;
-            util::stream::Sink * sink_;
+            ppbox::dispatch::WrapSink * sink_;
             std::string m3u8_content_;
         };
 
