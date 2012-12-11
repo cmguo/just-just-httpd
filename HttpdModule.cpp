@@ -80,9 +80,9 @@ namespace ppbox
         }
 
         ppbox::dispatch::DispatcherBase * HttpdModule::attach(
-            framework::string::Url & url)
+            framework::string::Url & url, 
+            boost::system::error_code & ec)
         {
-            boost::system::error_code ec;
             dispatch_module_.normalize_url(url, ec);
             url.param("dispatch.fast", "true");
 

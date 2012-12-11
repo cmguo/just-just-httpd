@@ -10,8 +10,6 @@
 #include <ppbox/dispatch/DispatcherBase.h>
 #include <ppbox/dispatch/Sink.h>
 
-#include <ppbox/common/CommonUrl.h>
-
 #include <util/serialization/ErrorCode.h>
 #include <util/archive/XmlOArchive.h>
 using namespace util::protocol;
@@ -54,11 +52,9 @@ namespace ppbox
             url_.from_string("http://" + request_head().host.get_value_or(peer_addr) + request_head().path);
 
             boost::system::error_code ec;
-            ppbox::common::decode_url(url_, ec);
+            dispatcher_ = mgr_.attach(url_, ec);
 
             if (!ec) {
-                dispatcher_ = mgr_.attach(url_);
-
                 std::string option = url_.path();
                 if (option != "/mediainfo"
                     && option != "/playinfo"

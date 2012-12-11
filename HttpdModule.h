@@ -43,7 +43,8 @@ namespace ppbox
 
         public:
             ppbox::dispatch::DispatcherBase * attach(
-                framework::string::Url & url);
+                framework::string::Url & url, 
+                boost::system::error_code & ec);
 
             void detach(
                 framework::string::Url const & url, 
