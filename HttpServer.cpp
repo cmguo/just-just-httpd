@@ -102,6 +102,7 @@ namespace ppbox
             } else {
                 assert(url_.path() == "/play");
                 set_non_block(true, ec);
+                sink_->sink(response_stream());
                 dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
                     boost::bind(&HttpServer::handle_play,this, resp, _1));
             }
@@ -166,7 +167,7 @@ namespace ppbox
             if (!ec1) {
                 if (option == "/play") {
                     if (url_.param("chunked") == "true") {
-                        response_head()["Transfer-Encoding"]="{chunked}";
+                        response_head().transfer_encoding = "chunked";
                     }
                     sink_ = new ppbox::dispatch::WrapSink(response_stream());
                     dispatcher_->setup(-1, *sink_, ec1)
@@ -186,10 +187,13 @@ namespace ppbox
                     resp(ec1, Size());
                 } else {
                     if (seek_range_.type == ppbox::dispatch::SeekRange::byte) {
+                        if (seek_range_.end == 0) {
+                            seek_range_.end = info.file_size;
+                        }
                         util::protocol::http_field::ContentRange content_range(info.file_size, seek_range_.beg, seek_range_.end);
                         response_head().err_code = util::protocol::http_error::partial_content;
                         response_head().content_range = content_range;
-                        resp(ec1, Size((size_t)(info.file_size - seek_range_.beg)));
+                        resp(ec1, Size((size_t)(seek_range_.end - seek_range_.beg)));
                     } else {
                         resp(ec1, Size((size_t)info.file_size));
                     }
