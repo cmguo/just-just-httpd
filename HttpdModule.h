@@ -7,7 +7,7 @@
 
 #include <ppbox/common/CommonModuleBase.h>
 
-#include <util/protocol/http/HttpServerManager.h>
+#include <framework/network/ServerManager.h>
 
 namespace ppbox
 {
@@ -24,7 +24,7 @@ namespace ppbox
 
         class HttpdModule
             : public ppbox::common::CommonModuleBase<HttpdModule>
-            , public util::protocol::HttpServerManager<HttpServer, HttpdModule>
+            , public framework::network::ServerManager<HttpServer, HttpdModule>
         {
         public:
             HttpdModule(

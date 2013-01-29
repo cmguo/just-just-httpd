@@ -9,6 +9,7 @@
 
 #include <ppbox/dispatch/DispatchModule.h>
 
+#include <framework/network/TcpSocket.hpp>
 #include <framework/logger/Logger.h>
 #include <framework/logger/StreamRecord.h>
 
@@ -22,7 +23,7 @@ namespace ppbox
         HttpdModule::HttpdModule(
             util::daemon::Daemon & daemon)
             : ppbox::common::CommonModuleBase<HttpdModule>(daemon, "HttpdModule")
-            , util::protocol::HttpServerManager<HttpServer, HttpdModule>(daemon.io_svc())
+            , framework::network::ServerManager<HttpServer, HttpdModule>(daemon.io_svc())
             , addr_("0.0.0.0:9006")
             , dispatch_module_(util::daemon::use_module<ppbox::dispatch::DispatchModule>(get_daemon()))
         {
