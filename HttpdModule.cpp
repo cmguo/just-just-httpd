@@ -4,8 +4,7 @@
 #include "ppbox/httpd/HttpdModule.h"
 #include "ppbox/httpd/HttpServer.h"
 #include "ppbox/httpd/Version.h"
-#define PPBOX_ENABLE_REGISTER_CLASS
-#include "ppbox/httpd/M3u8Session.h"
+#include "ppbox/httpd/ClassRegister.h"
 
 #include <ppbox/dispatch/DispatchModule.h>
 
