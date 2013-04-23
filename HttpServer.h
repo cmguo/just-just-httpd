@@ -64,7 +64,6 @@ namespace ppbox
             HttpdModule & mgr_;
             framework::string::Url url_;
             ppbox::dispatch::DispatcherBase * dispatcher_;
-            ppbox::dispatch::WrapSink * sink_;
             ppbox::dispatch::SeekRange seek_range_;
         };
 

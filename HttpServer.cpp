@@ -8,7 +8,6 @@
 
 #include <ppbox/dispatch/DispatchModule.h>
 #include <ppbox/dispatch/DispatcherBase.h>
-#include <ppbox/dispatch/Sink.h>
 
 #include <util/serialization/ErrorCode.h>
 #include <util/archive/XmlOArchive.h>
@@ -31,7 +30,6 @@ namespace ppbox
             : util::protocol::HttpServer(mgr.io_svc())
             , mgr_(mgr)
             , dispatcher_(NULL)
-            , sink_(NULL)
         {
         }
 
@@ -96,13 +94,14 @@ namespace ppbox
             response_head().get_content(std::cout);
             
             boost::system::error_code ec;
-                
+            dispatcher_->setup(-1, response_stream(), ec);
+            assert(!ec);
+
             if (response_data().size()) {
                 util::protocol::HttpServer::transfer_response_data(resp);
             } else {
                 assert(url_.path() == "/play");
                 set_non_block(true, ec);
-                sink_->sink(response_stream());
                 dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
                     boost::bind(&HttpServer::handle_play,this, resp, _1));
             }
@@ -116,10 +115,6 @@ namespace ppbox
                 dispatcher_->close(ec1);
                 mgr_.detach(url_, dispatcher_);
                 dispatcher_ = NULL;
-                if (sink_) {
-                    delete sink_;
-                    sink_ = NULL;
-                }
             }
         }
 
@@ -169,9 +164,7 @@ namespace ppbox
                     if (url_.param("chunked") == "true") {
                         response_head().transfer_encoding = "chunked";
                     }
-                    sink_ = new ppbox::dispatch::WrapSink(response_stream());
-                    dispatcher_->setup(-1, *sink_, ec1)
-                        && dispatcher_->get_media_info(info, ec1);
+                    dispatcher_->get_media_info(info, ec1);
                 }
             }
 
