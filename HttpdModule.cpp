@@ -85,6 +85,10 @@ namespace ppbox
         {
             dispatch_module_.normalize_url(url, ec);
             url.param("dispatch.fast", "true");
+            std::string::size_type pos = url.path().find('.');
+            if (pos != std::string::npos) {
+                url.path(url.path().substr(0, pos));
+            }
 
             std::string session_id = url.param("session");
             bool close = false;
