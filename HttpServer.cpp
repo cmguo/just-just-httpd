@@ -64,6 +64,12 @@ namespace ppbox
                     if (!url_.param("start").empty()) { // 伪HTTP协议
                         seek_range_.type = ppbox::dispatch::SeekRange::time;
                         seek_range_.beg = framework::string::parse<boost::uint64_t>(url_.param("start"));
+                    } else if (!url_.param("start_byte").empty()) { // 伪HTTP协议
+                        seek_range_.type = ppbox::dispatch::SeekRange::time;
+                        seek_range_.beg = boost::uint64_t(framework::string::parse<double>(url_.param("start_time")) * 1000);
+                    } else if (!url_.param("start_byte").empty()) { // 伪HTTP协议
+                        seek_range_.type = ppbox::dispatch::SeekRange::byte;
+                        seek_range_.beg = framework::string::parse<boost::uint64_t>(url_.param("start_byte"));
                     } else if(request().head().range.is_initialized()) {
                         util::protocol::http_field::RangeUnit unit = 
                             request().head().range.get()[0];
