@@ -99,13 +99,13 @@ namespace ppbox
         {
             response_head().get_content(std::cout);
             
-            boost::system::error_code ec;
-            dispatcher_->setup(-1, response_stream(), ec);
-            assert(!ec);
-
             if (response_data().size()) {
                 util::protocol::HttpServer::transfer_response_data(resp);
             } else {
+                boost::system::error_code ec;
+                dispatcher_->setup(-1, response_stream(), ec);
+                assert(!ec);
+
                 assert(url_.path() == "/play");
                 set_non_block(true, ec);
                 dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
