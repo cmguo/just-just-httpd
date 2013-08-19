@@ -114,7 +114,8 @@ namespace ppbox
                 if (proto.empty()) {
                     proto = url.param(ppbox::dispatch::param_format);
                 }
-                session = HttpSession::create(proto);
+                boost::system::error_code ec;
+                session = HttpSession::create(proto, ec);
                 if (session != NULL) {
                     if (session_id.empty()) {
                         session_id = proto + framework::string::format((long)session);
