@@ -72,12 +72,6 @@ namespace ppbox
                 return false;
             }
 
-        public:
-            ppbox::dispatch::DispatcherBase & dispatcher()
-            {
-                return dispatcher_;
-            }
-
             M3u8Session const & session() const
             {
                 return session_;
@@ -125,7 +119,7 @@ namespace ppbox
             if (url.param(ppbox::dispatch::param_format) == "m3u8") {
                 M3u8Dispatcher * m3u8_dispatcher = (M3u8Dispatcher *)dispatcher;
                 if (&m3u8_dispatcher->session() == this) {
-                    dispatcher = &m3u8_dispatcher->dispatcher();
+                    dispatcher = m3u8_dispatcher->detach();
                     delete m3u8_dispatcher;
                     HttpSession::detach();
                     is_mine = true;
