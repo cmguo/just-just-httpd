@@ -23,7 +23,7 @@ namespace ppbox
             util::daemon::Daemon & daemon)
             : ppbox::common::CommonModuleBase<HttpdModule>(daemon, "HttpdModule")
             , framework::network::ServerManager<HttpServer, HttpdModule>(daemon.io_svc())
-            , addr_("0.0.0.0:9006")
+            , addr_("0.0.0.0:9006+")
             , dispatch_module_(util::daemon::use_module<ppbox::dispatch::DispatchModule>(get_daemon()))
         {
             config().register_module("HttpdModule")
