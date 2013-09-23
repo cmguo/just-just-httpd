@@ -5,7 +5,7 @@
 
 #include <ppbox/dispatch/DispatchBase.h>
 
-#include <ppbox/common/ClassFactory.h>
+#include <util/tools/ClassFactory.h>
 
 namespace ppbox
 {
@@ -13,7 +13,7 @@ namespace ppbox
     {
 
         class HttpSession
-            : public ppbox::common::ClassFactory<
+            : public util::tools::ClassFactory<
                 HttpSession, 
                 std::string, 
                 HttpSession * (void)
@@ -50,6 +50,6 @@ namespace ppbox
     } // namespace dispatch
 } // namespace ppbox
 
-#define PPBOX_REGISTER_HTTP_SESSION(k, c) PPBOX_REGISTER_CLASS(k, c)
+#define PPBOX_REGISTER_HTTP_SESSION(k, c) UTIL_REGISTER_CLASS(k, c)
 
 #endif // _PPBOX_HTTPD_M3U8_SESSION_H_
