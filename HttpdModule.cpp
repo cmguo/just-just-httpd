@@ -115,7 +115,7 @@ namespace ppbox
                     proto = url.param(ppbox::dispatch::param_format);
                 }
                 boost::system::error_code ec;
-                session = HttpSession::create(proto, ec);
+                session = HttpSessionFactory::create(proto, ec);
                 if (session != NULL) {
                     if (session_id.empty()) {
                         session_id = proto + framework::string::format((long)session);
@@ -130,7 +130,7 @@ namespace ppbox
                     session->close();
                     if (session->empty()) {
                         session_map().erase(session_id);
-                        delete session;
+                        HttpSessionFactory::destroy(session);
                     }
                 }
             }

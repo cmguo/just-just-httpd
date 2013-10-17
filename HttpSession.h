@@ -13,11 +13,6 @@ namespace ppbox
     {
 
         class HttpSession
-            : public util::tools::ClassFactory<
-                HttpSession, 
-                std::string, 
-                HttpSession * (void)
-            >
         {
         public:
             HttpSession();
@@ -47,9 +42,18 @@ namespace ppbox
             size_t nref_;
         };
 
+        struct HttpSessionTraits
+            : util::tools::ClassFactoryTraits
+        {
+            typedef std::string key_type;
+            typedef HttpSession * (create_proto)();
+        };
+
+        typedef util::tools::ClassFactory<HttpSessionTraits> HttpSessionFactory;
+
     } // namespace dispatch
 } // namespace ppbox
 
-#define PPBOX_REGISTER_HTTP_SESSION(k, c) UTIL_REGISTER_CLASS(k, c)
+#define PPBOX_REGISTER_HTTP_SESSION(k, c) UTIL_REGISTER_CLASS(HttpSessionFactory, k, c)
 
 #endif // _PPBOX_HTTPD_M3U8_SESSION_H_
