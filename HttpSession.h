@@ -20,7 +20,7 @@ namespace ppbox
             virtual ~HttpSession();
 
         public:
-            void close();
+            bool closed() const;
 
             bool empty() const;
 
@@ -29,17 +29,17 @@ namespace ppbox
                 framework::string::Url & url, 
                 ppbox::dispatch::DispatcherBase *& dispatcher);
 
-            virtual bool detach(
+            virtual void detach(
                 framework::string::Url const & url, 
                 ppbox::dispatch::DispatcherBase *& dispatcher);
 
-        protected:
-            void attach();
-
-            void detach();
+            virtual void close();
 
         private:
+            bool closed_;
             size_t nref_;
+            framework::string::Url url_;
+            ppbox::dispatch::DispatcherBase * dispatcher_;
         };
 
         struct HttpSessionTraits

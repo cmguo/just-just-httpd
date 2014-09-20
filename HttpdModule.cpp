@@ -32,6 +32,13 @@ namespace ppbox
 
         HttpdModule::~HttpdModule()
         {
+            assert(session_map2_.empty());
+            assert(closed_sessions_.empty());
+            session_map_t::iterator iter = session_map_.begin();
+            for (; iter != session_map_.end(); ++iter) {
+                delete iter->second;
+                iter->second = NULL;
+            }
         }
 
         boost::system::error_code HttpdModule::startup()
@@ -44,39 +51,6 @@ namespace ppbox
         void HttpdModule::shutdown()
         {
             stop();
-            session_map_t::iterator iter = session_map().begin();
-            for (; iter != session_map().end(); ++iter) {
-                delete iter->second;
-                iter->second = NULL;
-            }
-            session_map().clear();
-        }
-
-        struct HttpdModule::find_call_detach
-        {
-            find_call_detach(
-                framework::string::Url const & url, 
-                ppbox::dispatch::DispatcherBase *& dispatcher) 
-                : url_(url)
-                , dispatcher_(dispatcher)
-            {
-            }
-
-            bool operator()(
-                session_map_t::value_type const & v) const
-            {
-                return v.second->detach(url_, dispatcher_);
-            }
-
-        private:
-            framework::string::Url const & url_;
-            ppbox::dispatch::DispatcherBase *& dispatcher_;
-        };
-
-        HttpdModule::session_map_t & HttpdModule::session_map()
-        {
-            static session_map_t g_map;
-            return g_map;
         }
 
         ppbox::dispatch::DispatcherBase * HttpdModule::attach(
@@ -100,8 +74,8 @@ namespace ppbox
                     close = true;
                     session_id = session_id.substr(5);
                 }
-                session_map_t::const_iterator iter = session_map().find(session_id);
-                if (iter != session_map().end()) {
+                session_map_t::const_iterator iter = session_map_.find(session_id);
+                if (iter != session_map_.end()) {
                     session = iter->second;
                 }
             }
@@ -121,17 +95,16 @@ namespace ppbox
                         session_id = proto + framework::string::format((long)session);
                         url.param("session", session_id);
                     }
-                    session_map().insert(std::make_pair(session_id, session));
+                    session_map_.insert(std::make_pair(session_id, session));
                 }
             }
             if (session != NULL) {
                 session->attach(url, dispatcher); // 具体的协议可以指定自定义的dispatcher
+                session_map2_.insert(std::make_pair(dispatcher, session));
                 if (close) {
                     session->close();
-                    if (session->empty()) {
-                        session_map().erase(session_id);
-                        HttpSessionFactory::destroy(session);
-                    }
+                    session_map_.erase(session_id);
+                    closed_sessions_.push_back(session);
                 }
             }
             return dispatcher;
@@ -141,12 +114,16 @@ namespace ppbox
             framework::string::Url const & url, 
             ppbox::dispatch::DispatcherBase * dispatcher)
         {
-            session_map_t::iterator iter = 
-                std::find_if(session_map().begin(), session_map().end(), find_call_detach(url, dispatcher));
-            if (iter != session_map().end() && iter->second->empty()) {
-                HttpSession * session = iter->second;
-                session_map().erase(iter);
-                delete session;
+            session_map2_t::iterator iter = session_map2_.find(dispatcher);
+            if (iter == session_map2_.end())
+                return;
+            HttpSession * session = iter->second;
+            session_map2_.erase(iter);
+            session->detach(url, dispatcher);
+            if (session->empty()) {
+                closed_sessions_.erase(
+                    std::find(closed_sessions_.begin(), closed_sessions_.end(), session));
+                HttpSessionFactory::destroy(session);
             }
             dispatch_module_.free_dispatcher(dispatcher);
         }

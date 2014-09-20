@@ -23,7 +23,7 @@ namespace ppbox
                 framework::string::Url & url, 
                 ppbox::dispatch::DispatcherBase *& dispatcher);
 
-            virtual bool detach(
+            virtual void detach(
                 framework::string::Url const & url, 
                 ppbox::dispatch::DispatcherBase *& dispatcher);
 

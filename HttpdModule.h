@@ -55,11 +55,11 @@ namespace ppbox
             ppbox::dispatch::DispatchModule & dispatch_module_;
 
         private:
-            struct find_by_session;
-            struct find_call_detach;
-
             typedef std::map<std::string, HttpSession *> session_map_t;
-            static session_map_t & session_map();
+            typedef std::map<ppbox::dispatch::DispatcherBase *, HttpSession *> session_map2_t;
+            session_map_t session_map_;
+            session_map2_t session_map2_;
+            std::vector<HttpSession *> closed_sessions_;
         };
 
     } // namespace httpd

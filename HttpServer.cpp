@@ -109,7 +109,7 @@ namespace ppbox
                 assert(url_.path() == "/play");
                 set_non_block(true, ec);
                 dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
-                    boost::bind(&HttpServer::handle_play,this, resp, _1));
+                    boost::bind(&HttpServer::handle_play, this, resp, _1));
             }
         }
 

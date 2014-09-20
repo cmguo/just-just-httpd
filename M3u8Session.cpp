@@ -20,10 +20,8 @@ namespace ppbox
         {
         public:
             M3u8Dispatcher(
-                M3u8Session const & session, 
                 ppbox::dispatch::DispatcherBase & dispatcher)
                 : ppbox::dispatch::CustomDispatcher(dispatcher)
-                , session_(session)
                 , sink_(NULL)
             {
             }
@@ -72,13 +70,7 @@ namespace ppbox
                 return false;
             }
 
-            M3u8Session const & session() const
-            {
-                return session_;
-            }
-
         private:
-            M3u8Session const & session_;
             util::stream::Sink * sink_;
             std::string m3u8_content_;
         };
@@ -106,26 +98,20 @@ namespace ppbox
                     url_format_.param("session", url.param("session"));
                 }
                 url.param("mux.M3u8Protocol.url_format", url_format_.to_string());
-                dispatcher = new M3u8Dispatcher(*this, *dispatcher);
-                HttpSession::attach();
+                dispatcher = new M3u8Dispatcher(*dispatcher);
             }
         }
 
-        bool M3u8Session::detach(
+        void M3u8Session::detach(
             framework::string::Url const & url, 
             ppbox::dispatch::DispatcherBase *& dispatcher)
         {
-            bool is_mine = false;
             if (url.param(ppbox::dispatch::param_format) == "m3u8") {
                 M3u8Dispatcher * m3u8_dispatcher = (M3u8Dispatcher *)dispatcher;
-                if (&m3u8_dispatcher->session() == this) {
-                    dispatcher = m3u8_dispatcher->detach();
-                    delete m3u8_dispatcher;
-                    HttpSession::detach();
-                    is_mine = true;
-                }
+                dispatcher = m3u8_dispatcher->detach();
+                delete m3u8_dispatcher;
             }
-            return HttpSession::detach(url, dispatcher) || is_mine;
+            HttpSession::detach(url, dispatcher);
         }
 
     } // namespace dispatch
