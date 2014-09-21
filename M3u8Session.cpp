@@ -43,7 +43,7 @@ namespace ppbox
                 ppbox::dispatch::response_t const & resp)
             {
                 assert(sink_);
-                ppbox::data::MediaInfo info;
+                ppbox::avbase::MediaInfo info;
                 boost::system::error_code ec;
                 if (get_media_info(info, ec)) {
                     // 这里不能异步写临时变量中的数据，所以交换到成员变量中
@@ -59,12 +59,12 @@ namespace ppbox
             }
 
             virtual bool get_media_info(
-                ppbox::data::MediaInfo & info, 
+                ppbox::avbase::MediaInfo & info, 
                 boost::system::error_code & ec)
             {
                 if (CustomDispatcher::get_media_info(info, ec)) {
                     info.file_size = info.format_data.size();
-                    info.format = "m3u8";
+                    info.format_type = "m3u8";
                     return true;
                 }
                 return false;

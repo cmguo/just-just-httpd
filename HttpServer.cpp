@@ -163,7 +163,7 @@ namespace ppbox
             boost::system::error_code ec1 = ec;
             std::string option = url_.path();
 
-            ppbox::data::MediaInfo info;
+            ppbox::avbase::MediaInfo info;
 
             if (!ec1) {
                 if (option == "/play") {
@@ -181,8 +181,8 @@ namespace ppbox
             }
 
             if (option == "/play") {
-                response_head()["Content-Type"] = std::string("{") + content_type(info.format) + "}";
-                if (info.file_size == ppbox::data::invalid_size) {
+                response_head()["Content-Type"] = std::string("{") + content_type(info.format_type) + "}";
+                if (info.file_size == ppbox::avbase::invalid_size) {
                     resp(ec1, Size());
                 } else {
                     if (seek_range_.type == ppbox::dispatch::SeekRange::byte) {
@@ -234,7 +234,7 @@ namespace ppbox
         void HttpServer::make_mediainfo(
             boost::system::error_code & ec)
         {
-            ppbox::data::MediaInfo info;
+            ppbox::avbase::MediaInfo info;
             dispatcher_->get_media_info(info, ec);
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());
@@ -245,7 +245,7 @@ namespace ppbox
         void HttpServer::make_playinfo(
             boost::system::error_code& ec)
         {
-            ppbox::data::StreamStatus info;
+            ppbox::avbase::StreamStatus info;
             dispatcher_->get_stream_status(info, ec);
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());
