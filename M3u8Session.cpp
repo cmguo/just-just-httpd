@@ -1,27 +1,27 @@
 // HttpProto.cpp
 
-#include "ppbox/httpd/Common.h"
-#include "ppbox/httpd/M3u8Session.h"
+#include "just/httpd/Common.h"
+#include "just/httpd/M3u8Session.h"
 
-#include <ppbox/dispatch/CustomDispatcher.h>
+#include <just/dispatch/CustomDispatcher.h>
 
 #include <util/stream/Sink.h>
 
 #include <boost/asio/write.hpp>
 #include <boost/bind.hpp>
 
-namespace ppbox
+namespace just
 {
     namespace httpd
     {
 
         class M3u8Dispatcher
-            : public ppbox::dispatch::CustomDispatcher
+            : public just::dispatch::CustomDispatcher
         {
         public:
             M3u8Dispatcher(
-                ppbox::dispatch::DispatcherBase & dispatcher)
-                : ppbox::dispatch::CustomDispatcher(dispatcher)
+                just::dispatch::DispatcherBase & dispatcher)
+                : just::dispatch::CustomDispatcher(dispatcher)
                 , sink_(NULL)
             {
             }
@@ -38,12 +38,12 @@ namespace ppbox
             }
 
             virtual void async_play(
-                ppbox::dispatch::SeekRange const & range, 
-                ppbox::dispatch::response_t const & seek_resp,
-                ppbox::dispatch::response_t const & resp)
+                just::dispatch::SeekRange const & range, 
+                just::dispatch::response_t const & seek_resp,
+                just::dispatch::response_t const & resp)
             {
                 assert(sink_);
-                ppbox::avbase::MediaInfo info;
+                just::avbase::MediaInfo info;
                 boost::system::error_code ec;
                 if (get_media_info(info, ec)) {
                     // 这里不能异步写临时变量中的数据，所以交换到成员变量中
@@ -59,7 +59,7 @@ namespace ppbox
             }
 
             virtual bool get_media_info(
-                ppbox::avbase::MediaInfo & info, 
+                just::avbase::MediaInfo & info, 
                 boost::system::error_code & ec)
             {
                 if (CustomDispatcher::get_media_info(info, ec)) {
@@ -85,10 +85,10 @@ namespace ppbox
 
         void M3u8Session::attach(
             framework::string::Url & url, 
-            ppbox::dispatch::DispatcherBase *& dispatcher)
+            just::dispatch::DispatcherBase *& dispatcher)
         {
             HttpSession::attach(url, dispatcher);
-            if (url.param(ppbox::dispatch::param_format) == "m3u8") {
+            if (url.param(just::dispatch::param_format) == "m3u8") {
                 if (!url_format_.is_valid()) {
                     url_format_.protocol(url.protocol());
                     url_format_.host(url.host());
@@ -104,9 +104,9 @@ namespace ppbox
 
         void M3u8Session::detach(
             framework::string::Url const & url, 
-            ppbox::dispatch::DispatcherBase *& dispatcher)
+            just::dispatch::DispatcherBase *& dispatcher)
         {
-            if (url.param(ppbox::dispatch::param_format) == "m3u8") {
+            if (url.param(just::dispatch::param_format) == "m3u8") {
                 M3u8Dispatcher * m3u8_dispatcher = (M3u8Dispatcher *)dispatcher;
                 dispatcher = m3u8_dispatcher->detach();
                 delete m3u8_dispatcher;
@@ -115,5 +115,5 @@ namespace ppbox
         }
 
     } // namespace dispatch
-} // namespace ppbox
+} // namespace just
 

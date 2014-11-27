@@ -1,13 +1,13 @@
 // HttpSession.h
 
-#ifndef _PPBOX_HTTPD_HTTP_SESSION_H_
-#define _PPBOX_HTTPD_HTTP_SESSION_H_
+#ifndef _JUST_HTTPD_HTTP_SESSION_H_
+#define _JUST_HTTPD_HTTP_SESSION_H_
 
-#include <ppbox/dispatch/DispatchBase.h>
+#include <just/dispatch/DispatchBase.h>
 
 #include <util/tools/ClassFactory.h>
 
-namespace ppbox
+namespace just
 {
     namespace httpd
     {
@@ -27,11 +27,11 @@ namespace ppbox
         public:
             virtual void attach(
                 framework::string::Url & url, 
-                ppbox::dispatch::DispatcherBase *& dispatcher);
+                just::dispatch::DispatcherBase *& dispatcher);
 
             virtual void detach(
                 framework::string::Url const & url, 
-                ppbox::dispatch::DispatcherBase *& dispatcher);
+                just::dispatch::DispatcherBase *& dispatcher);
 
             virtual void close();
 
@@ -39,7 +39,7 @@ namespace ppbox
             bool closed_;
             size_t nref_;
             framework::string::Url url_;
-            ppbox::dispatch::DispatcherBase * dispatcher_;
+            just::dispatch::DispatcherBase * dispatcher_;
         };
 
         struct HttpSessionTraits
@@ -52,8 +52,8 @@ namespace ppbox
         typedef util::tools::ClassFactory<HttpSessionTraits> HttpSessionFactory;
 
     } // namespace dispatch
-} // namespace ppbox
+} // namespace just
 
-#define PPBOX_REGISTER_HTTP_SESSION(k, c) UTIL_REGISTER_CLASS(HttpSessionFactory, k, c)
+#define JUST_REGISTER_HTTP_SESSION(k, c) UTIL_REGISTER_CLASS(HttpSessionFactory, k, c)
 
-#endif // _PPBOX_HTTPD_M3U8_SESSION_H_
+#endif // _JUST_HTTPD_M3U8_SESSION_H_

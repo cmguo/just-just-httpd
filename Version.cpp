@@ -1,5 +1,5 @@
 // Version.cpp
 
-#include "ppbox/httpd/Common.h"
+#include "just/httpd/Common.h"
 #define VERSION_SOURCE
-#include "ppbox/httpd/Version.h"
+#include "just/httpd/Version.h"

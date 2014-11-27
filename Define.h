@@ -1,13 +1,13 @@
 // Define.h
 
-#ifndef _PPBOX_HTTPD_DEFINE_H_
-#define _PPBOX_HTTPD_DEFINE_H_
+#ifndef _JUST_HTTPD_DEFINE_H_
+#define _JUST_HTTPD_DEFINE_H_
 
-#include "ppbox/common/VersionDefine.h" // for VERSION
+#include "just/common/VersionDefine.h" // for VERSION
 
-#define NAME ppbox_httpd
+#define NAME just_httpd
 
-#define BEGIN_NAME_SPACE namespace ppbox { namespace httpd {
+#define BEGIN_NAME_SPACE namespace just { namespace httpd {
 
 #define END_NAME_SPACE }}
 

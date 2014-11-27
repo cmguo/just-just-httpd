@@ -1,7 +1,7 @@
 // Serialize.h
 
-#include <ppbox/avbase/MediaInfo.h>
-#include <ppbox/avbase/StreamStatus.h>
+#include <just/avbase/MediaInfo.h>
+#include <just/avbase/StreamStatus.h>
 
 #include <util/serialization/Serialization.h>
 #include <util/serialization/NVPair.h>
@@ -16,7 +16,7 @@ namespace util
         >
         void serialize(
             Archive & ar, 
-            ppbox::avbase::MediaInfo & info)
+            just::avbase::MediaInfo & info)
         {
             ar & SERIALIZATION_NVP_1(info, file_size);
             ar & SERIALIZATION_NVP_1(info, duration);
@@ -29,7 +29,7 @@ namespace util
         >
         void serialize(
             Archive & ar, 
-            ppbox::avbase::StreamRange & range)
+            just::avbase::StreamRange & range)
         {
             ar & SERIALIZATION_NVP_1(range, beg);
             ar & SERIALIZATION_NVP_1(range, end);
@@ -42,7 +42,7 @@ namespace util
         >
         void serialize(
             Archive & ar, 
-            ppbox::avbase::StreamStatus & info)
+            just::avbase::StreamStatus & info)
         {
             ar & SERIALIZATION_NVP_1(info, byte_range);
             ar & SERIALIZATION_NVP_1(info, time_range);

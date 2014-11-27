@@ -8,7 +8,7 @@ PROJECT_TYPE			:= lib
 
 ## 生成目标名称（完整文件名称要根据类型PROJECT_TYPE、配置LOCAL_CONFIG、版本PROJECT_VERSION增加前缀、后缀）
 
-PROJECT_TARGET			:= ppbox_httpd
+PROJECT_TARGET			:= just_httpd
 
 ## 项目版本号（只要前三位，最后一位自动生成）
 
@@ -16,7 +16,7 @@ PROJECT_VERSION			:=
 
 ## 项目版本定义文件
 
-PROJECT_VERSION_HEADER		:= ppbox/httpd/Define.h
+PROJECT_VERSION_HEADER		:= just/httpd/Define.h
 
 ## 指定源文件目录（该项目源文件的总目录，相对于源文件根目录ROOT_SOURCE_DIRECTORY，默认为LOCAL_NAME）
 
@@ -36,7 +36,7 @@ PROJECT_HEADER_DIRECTORY	:= .
 
 ## 项目预编译头文件
 
-PROJECT_COMMON_HEADERS  	:= ppbox/httpd/Common.h
+PROJECT_COMMON_HEADERS  	:= just/httpd/Common.h
 
 ## 额外包含目录（多个，相对于包含根目录ROOT_INCLUDE_DIRECTORY）
 
@@ -53,7 +53,7 @@ PROJECT_LINK_FLAGS		:= $(PROJECT_LINK_FLAGS)
 ## 该项目依赖的其他项目
 
 PROJECT_DEPENDS			:= \
-				/ppbox/dispatch \
+				/just/dispatch \
 				$(PROJECT_DEPENDS)
 
 ## 该项目特定的引用库

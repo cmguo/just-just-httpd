@@ -1,13 +1,13 @@
 // HttpServer.cpp
 
-#include "ppbox/httpd/Common.h"
-#include "ppbox/httpd/HttpServer.h"
-#include "ppbox/httpd/HttpdModule.h"
-#include "ppbox/httpd/HttpSession.h"
-#include "ppbox/httpd/Serialize.h"
+#include "just/httpd/Common.h"
+#include "just/httpd/HttpServer.h"
+#include "just/httpd/HttpdModule.h"
+#include "just/httpd/HttpSession.h"
+#include "just/httpd/Serialize.h"
 
-#include <ppbox/dispatch/DispatchModule.h>
-#include <ppbox/dispatch/DispatcherBase.h>
+#include <just/dispatch/DispatchModule.h>
+#include <just/dispatch/DispatcherBase.h>
 
 #include <util/serialization/ErrorCode.h>
 #include <util/archive/XmlOArchive.h>
@@ -18,9 +18,9 @@ using namespace util::protocol;
 
 #include <boost/bind.hpp>
 
-FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("ppbox.httpd.HttpServer", framework::logger::Debug);
+FRAMEWORK_LOGGER_DECLARE_MODULE_LEVEL("just.httpd.HttpServer", framework::logger::Debug);
 
-namespace ppbox
+namespace just
 {
     namespace httpd
     {
@@ -62,23 +62,23 @@ namespace ppbox
 
                 if (option == "/play") {
                     if (!url_.param("start").empty()) { // 伪HTTP协议
-                        seek_range_.type = ppbox::dispatch::SeekRange::time;
+                        seek_range_.type = just::dispatch::SeekRange::time;
                         seek_range_.beg = framework::string::parse<boost::uint64_t>(url_.param("start"));
                     } else if (!url_.param("start_byte").empty()) { // 伪HTTP协议
-                        seek_range_.type = ppbox::dispatch::SeekRange::time;
+                        seek_range_.type = just::dispatch::SeekRange::time;
                         seek_range_.beg = boost::uint64_t(framework::string::parse<double>(url_.param("start_time")) * 1000);
                     } else if (!url_.param("start_byte").empty()) { // 伪HTTP协议
-                        seek_range_.type = ppbox::dispatch::SeekRange::byte;
+                        seek_range_.type = just::dispatch::SeekRange::byte;
                         seek_range_.beg = framework::string::parse<boost::uint64_t>(url_.param("start_byte"));
                     } else if(request().head().range.is_initialized()) {
                         util::protocol::http_field::RangeUnit unit = 
                             request().head().range.get()[0];
-                        seek_range_.type = ppbox::dispatch::SeekRange::byte;
+                        seek_range_.type = just::dispatch::SeekRange::byte;
                         seek_range_.beg = unit.begin();
                         if (unit.has_end()) {
                             seek_range_.end = unit.end();
                         //} else if (unit.begin() == 0) {
-                        //    seek_range_.type = ppbox::dispatch::SeekRange::none;
+                        //    seek_range_.type = just::dispatch::SeekRange::none;
                         }
                     }
                 }
@@ -108,7 +108,7 @@ namespace ppbox
 
                 assert(url_.path() == "/play");
                 set_non_block(true, ec);
-                dispatcher_->async_play(seek_range_, ppbox::dispatch::response_t(), 
+                dispatcher_->async_play(seek_range_, just::dispatch::response_t(), 
                     boost::bind(&HttpServer::handle_play, this, resp, _1));
             }
         }
@@ -163,7 +163,7 @@ namespace ppbox
             boost::system::error_code ec1 = ec;
             std::string option = url_.path();
 
-            ppbox::avbase::MediaInfo info;
+            just::avbase::MediaInfo info;
 
             if (!ec1) {
                 if (option == "/play") {
@@ -182,10 +182,10 @@ namespace ppbox
 
             if (option == "/play") {
                 response_head()["Content-Type"] = std::string("{") + content_type(info.format_type) + "}";
-                if (info.file_size == ppbox::avbase::invalid_size) {
+                if (info.file_size == just::avbase::invalid_size) {
                     resp(ec1, Size());
                 } else {
-                    if (seek_range_.type == ppbox::dispatch::SeekRange::byte) {
+                    if (seek_range_.type == just::dispatch::SeekRange::byte) {
                         if (seek_range_.end == 0) {
                             seek_range_.end = info.file_size;
                         }
@@ -234,7 +234,7 @@ namespace ppbox
         void HttpServer::make_mediainfo(
             boost::system::error_code & ec)
         {
-            ppbox::avbase::MediaInfo info;
+            just::avbase::MediaInfo info;
             dispatcher_->get_media_info(info, ec);
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());
@@ -245,7 +245,7 @@ namespace ppbox
         void HttpServer::make_playinfo(
             boost::system::error_code& ec)
         {
-            ppbox::avbase::StreamStatus info;
+            just::avbase::StreamStatus info;
             dispatcher_->get_stream_status(info, ec);
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());
@@ -254,4 +254,4 @@ namespace ppbox
         }
 
     } // namespace httpd
-} // namespace ppbox
+} // namespace just

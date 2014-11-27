@@ -1,15 +1,15 @@
 // HttpServer.h
 
-#ifndef _PPBOX_HTTPD_HTTP_SERVER_H_
-#define _PPBOX_HTTPD_HTTP_SERVER_H_
+#ifndef _JUST_HTTPD_HTTP_SERVER_H_
+#define _JUST_HTTPD_HTTP_SERVER_H_
 
-#include <ppbox/dispatch/DispatchBase.h>
+#include <just/dispatch/DispatchBase.h>
 
 #include <util/protocol/http/HttpServer.h>
 #include <util/protocol/http/HttpRequest.h>
 #include <util/protocol/http/HttpResponse.h>
 
-namespace ppbox
+namespace just
 {
     namespace dispatch
     {
@@ -63,11 +63,11 @@ namespace ppbox
         private:
             HttpdModule & mgr_;
             framework::string::Url url_;
-            ppbox::dispatch::DispatcherBase * dispatcher_;
-            ppbox::dispatch::SeekRange seek_range_;
+            just::dispatch::DispatcherBase * dispatcher_;
+            just::dispatch::SeekRange seek_range_;
         };
 
     } // namespace httpd
-} // namespace ppbox
+} // namespace just
 
-#endif // _PPBOX_HTTPD_HTTP_SERVER_H_
+#endif // _JUST_HTTPD_HTTP_SERVER_H_

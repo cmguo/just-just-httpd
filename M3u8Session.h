@@ -1,11 +1,11 @@
 // M3u8Session.h
 
-#ifndef _PPBOX_HTTPD_M3U8_SESSION_H_
-#define _PPBOX_HTTPD_M3U8_SESSION_H_
+#ifndef _JUST_HTTPD_M3U8_SESSION_H_
+#define _JUST_HTTPD_M3U8_SESSION_H_
 
-#include "ppbox/httpd/HttpSession.h"
+#include "just/httpd/HttpSession.h"
 
-namespace ppbox
+namespace just
 {
     namespace httpd
     {
@@ -21,19 +21,19 @@ namespace ppbox
         public:
             virtual void attach(
                 framework::string::Url & url, 
-                ppbox::dispatch::DispatcherBase *& dispatcher);
+                just::dispatch::DispatcherBase *& dispatcher);
 
             virtual void detach(
                 framework::string::Url const & url, 
-                ppbox::dispatch::DispatcherBase *& dispatcher);
+                just::dispatch::DispatcherBase *& dispatcher);
 
         protected:
             framework::string::Url url_format_;
         };
 
-        PPBOX_REGISTER_HTTP_SESSION("m3u8", M3u8Session);
+        JUST_REGISTER_HTTP_SESSION("m3u8", M3u8Session);
 
     } // namespace httpd
-} // namespace ppbox
+} // namespace just
 
-#endif // _PPBOX_HTTPD_M3U8_SESSION_H_
+#endif // _JUST_HTTPD_M3U8_SESSION_H_
