@@ -41,16 +41,18 @@ namespace just
             }
         }
 
-        boost::system::error_code HttpdModule::startup()
+        bool HttpdModule::startup(
+            boost::system::error_code & ec)
         {
-            boost::system::error_code ec;
             start(addr_,ec);
-            return ec;
+            return !ec;
         }
 
-        void HttpdModule::shutdown()
+        bool HttpdModule::shutdown(
+            boost::system::error_code & ec)
         {
-            stop();
+            stop(ec);
+            return !ec;
         }
 
         just::dispatch::DispatcherBase * HttpdModule::attach(
