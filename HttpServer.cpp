@@ -52,6 +52,8 @@ namespace just
             boost::system::error_code ec;
             dispatcher_ = mgr_.attach(url_, ec);
 
+            LOG_INFO( "[local_process] dispatcher:" << dispatcher_ << " url:" << url_.to_string());
+
             if (!ec) {
                 std::string option = url_.path();
                 if (option != "/mediainfo"
@@ -115,7 +117,7 @@ namespace just
 
         void HttpServer::on_finish()
         {
-            LOG_INFO( "[on_finish] dispatcher:"<< dispatcher_);
+            LOG_INFO( "[on_finish] dispatcher:" << dispatcher_);
             if (dispatcher_) {
                 boost::system::error_code ec1;
                 dispatcher_->close(ec1);
@@ -158,7 +160,7 @@ namespace just
             response_type const & resp,
             boost::system::error_code const & ec)
         {
-            LOG_INFO( "[handle_open] dispatcher:" << dispatcher_ << " ec:" << ec.message());
+            LOG_INFO( "[handle_open] dispatcher:" << dispatcher_ << " option:" << url_.path() << " ec:" << ec.message());
 
             boost::system::error_code ec1 = ec;
             std::string option = url_.path();
@@ -215,7 +217,7 @@ namespace just
             response_type const & resp,
             boost::system::error_code const & ec)
         {
-            LOG_INFO( "[handle_play] ec:"<<ec.message());
+            LOG_INFO("[handle_play] ec:" << ec.message());
             resp(ec, 0);
         }
 
@@ -239,6 +241,9 @@ namespace just
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());
                 oa << info;
+            } else {
+                LOG_WARN("[make_playinfo] ec:" << ec.message());
+                make_error(ec);
             }
         }
 
@@ -250,6 +255,9 @@ namespace just
             if (!ec) {
                 util::archive::XmlOArchive<> oa(response_data());
                 oa << info;
+            } else {
+                LOG_WARN("[make_playinfo] ec:" << ec.message());
+                make_error(ec);
             }
         }
 
